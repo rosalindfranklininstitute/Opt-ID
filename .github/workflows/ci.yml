@@ -1,0 +1,87 @@
+# Copyright 2017 Diamond Light Source
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific
+# language governing permissions and limitations under the License.
+
+
+name: CI - Build Container Images and Test
+
+on:
+  push:
+    branches:
+      - '**'
+    paths-ignore:
+      - README.md
+      - README.template
+      - .github/workflows/readme.yml
+  pull_request:
+    branches:
+      - '**'
+    paths-ignore:
+      - README.md
+      - README.template
+      - .github/workflows/readme.yml
+
+  workflow_dispatch:
+
+jobs:
+  build_env:
+    name: Build Docker Image and Test
+    runs-on: ubuntu-20.04
+
+    steps:
+      # Configure environment variable depending on which branch we are running on
+      - name: Set env to master
+        if: endsWith(github.ref, '/master')
+        run: echo "DOCKER_REPO_TAG=opt-id:latest" >> $GITHUB_ENV
+      - name: Set env to branch
+        if: (!endsWith(github.ref, '/master'))
+        run: echo "DOCKER_REPO_TAG=opt-id:${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      - name: Set image name
+        run: echo "DOCKER_REPO_NAME=${{ secrets.DOCKER_ORG }}/$DOCKER_REPO_TAG" >> $GITHUB_ENV
+
+      # Checks-out repository under $(pwd)
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      # Build Docker image, push image to Dockerhub on success
+      - name: Pull existing Docker image
+        run: docker pull $DOCKER_REPO_NAME || true
+
+      - name: Build Docker image
+        run: |
+          docker build --pull --cache-from $DOCKER_REPO_NAME --tag $DOCKER_REPO_NAME -f Dockerfile .
+
+      - name: Start container
+        run: |
+          docker run -itd --name env -v $(pwd):/tmp/repo/ -w /tmp/repo/ $DOCKER_REPO_NAME
+
+      - name: Execute tests within container
+        run: |
+          docker exec env python -m pytest --cov=/usr/local/Opt-ID/IDSort/src /usr/local/Opt-ID/IDSort/test/ --cov-report xml:coverage.xml --cov-report term-missing
+
+      - name: Halt container
+        run: docker stop env
+
+      - name: Submit coverage to Codecov
+        run: |
+          bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} -f coverage.xml
+
+      - name: Halt container
+        run: docker stop env
+
+      - name: Push Docker image to Dockerhub
+        run: |
+          echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker push $DOCKER_REPO_NAME
