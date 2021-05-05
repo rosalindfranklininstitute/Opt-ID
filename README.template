@@ -1,4 +1,4 @@
-![GitHub](https://img.shields.io/github/license/rosalindfranklininstitute/Opt-ID?kill_cache=1) [![GitHub Workflow Status (branch)](https://github.com/rosalindfranklininstitute/Opt-ID/actions/workflows/ci.yml/badge.svg?branch=r1.1)](https://github.com/rosalindfranklininstitute/Opt-ID/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/rosalindfranklininstitute/Opt-ID/branch/r1.1/graph/badge.svg?token=pZp3wgitjN)](https://codecov.io/gh/rosalindfranklininstitute/Opt-ID)
+![GitHub](https://img.shields.io/github/license/{{ env['GITHUB_REPOSITORY'] }}?kill_cache=1) [![GitHub Workflow Status (branch)](https://github.com/{{ env['GITHUB_REPOSITORY'] }}/actions/workflows/ci.yml/badge.svg?branch={{ env['GITHUB_BRANCH'] }})](https://github.com/{{ env['GITHUB_REPOSITORY'] }}/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/{{ env['GITHUB_REPOSITORY'] }}/branch/{{ env['GITHUB_BRANCH'] }}/graph/badge.svg?token=pZp3wgitjN)](https://codecov.io/gh/{{ env['GITHUB_REPOSITORY'] }})
 
 # Opt-ID
 Code for the Optimisation of ID's using Python and Opt-AI
