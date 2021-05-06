@@ -1,5 +1,21 @@
 ![GitHub](https://img.shields.io/github/license/rosalindfranklininstitute/Opt-ID?kill_cache=1) [![GitHub Workflow Status (branch)](https://github.com/rosalindfranklininstitute/Opt-ID/actions/workflows/ci.yml/badge.svg?branch=r2.0)](https://github.com/rosalindfranklininstitute/Opt-ID/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/rosalindfranklininstitute/Opt-ID/branch/r2.0/graph/badge.svg?token=pZp3wgitjN)](https://codecov.io/gh/rosalindfranklininstitute/Opt-ID)
 
+# Deprecated!
+
+Version 2.0.x of Opt-ID will be deprecated and is under long term support development.
+
+# Docker and Singularity Containers
+
+```
+docker pull rosalindfranklininstitute/opt-id:r2.0
+
+docker run -itd --name env -v $(pwd):/tmp/repo/ -w /tmp/repo/ rosalindfranklininstitute/opt-id:r2.0
+
+docker exec env python -m pytest --cov=/usr/local/Opt-ID/IDSort/src /usr/local/Opt-ID/IDSort/test/ --cov-report xml:coverage.xml --cov-report term-missing
+
+docker stop env
+```
+
 # Opt-ID
 Code for the Optimisation of ID's using Python and Opt-AI
 
