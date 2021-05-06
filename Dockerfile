@@ -25,7 +25,8 @@ RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selectio
 # Install python packages
 RUN pip3 install --no-cache-dir --upgrade \
         mock pytest pytest-cov PyYAML coverage \
-        more_itertools numpy h5py scipy matplotlib && \
+        more_itertools numpy h5py scipy matplotlib \
+        ruamel.yaml Jinja2 pandoc jupyter jupyter_client nbformat nbconvert && \
     env MPICC=/usr/local/bin/mpicc pip3 install --no-cache-dir --upgrade \
         mpi4py && \
     rm -rf /tmp/* && \
