@@ -453,5 +453,3 @@ path in the above command. For example, to run `IDSort/test/magnets_test.py`:
 ```
 python -m pytest IDSort/test/magnets_test.py
 ```
-
-[![](https://codescene.io/projects/6289/status.svg) Get more details at **codescene.io**.](https://codescene.io/projects/6289/jobs/latest-successful/results)
