@@ -1,5 +1,21 @@
 ![GitHub](https://img.shields.io/github/license/{{ env['GITHUB_REPOSITORY'] }}?kill_cache=1) [![GitHub Workflow Status (branch)](https://github.com/{{ env['GITHUB_REPOSITORY'] }}/actions/workflows/ci.yml/badge.svg?branch={{ env['GITHUB_BRANCH'] }})](https://github.com/{{ env['GITHUB_REPOSITORY'] }}/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/{{ env['GITHUB_REPOSITORY'] }}/branch/{{ env['GITHUB_BRANCH'] }}/graph/badge.svg?token=pZp3wgitjN)](https://codecov.io/gh/{{ env['GITHUB_REPOSITORY'] }})
 
+# Deprecated!
+
+Version 1.1.x of Opt-ID has been deprecated and is is not under active development.
+
+# Docker and Singularity Containers
+
+```
+docker pull rosalindfranklininstitute/opt-id:r1.1
+
+docker run -itd --name env -v $(pwd):/tmp/repo/ -w /tmp/repo/ rosalindfranklininstitute/opt-id:r1.1
+
+docker exec env python2 -m pytest --cov=/usr/local/Opt-ID/IDSort/src /usr/local/Opt-ID/IDSort/test/ --cov-report xml:coverage.xml
+
+docker stop env
+```
+
 # Opt-ID
 Code for the Optimisation of ID's using Python and Opt-AI
 
