@@ -23,6 +23,7 @@ Created on 3 Dec 2013
 import h5py
 import json
 import numpy as np
+from scipy.stats import truncnorm
 
 from .logging_utils import logging, getLogger, setLoggerLevel
 logger = getLogger(__name__)
@@ -158,6 +159,9 @@ def process(options, args):
     logger.debug('Evaluation points S-axis | Requested min [%f] max [%f] | Observed min [%f] max [%f]',
                  data['smin'], data['smax'], np.min(bfield_eval_points[2]), np.max(bfield_eval_points[2]))
 
+    rng_state = np.random.RandomState(seed=(options.seed if (hasattr(options, 'seed') and
+                                            (options.seed is None or options.seed > 0)) else None))
+
     try:
 
         with h5py.File(output_path, 'w') as outfile:
@@ -175,6 +179,39 @@ def process(options, args):
 
                     # Extract magnet data
                     position, dimensions = np.array(mag['position']), np.array(mag['dimensions'])
+
+                    rpx, rpz, rps = 0, 0, 0
+                    if hasattr(options, 'rsx') and hasattr(options, 'rtx') \
+                            and (options.rsx > 0) and (options.rtx > 0):
+                        rpx += truncnorm.rvs(a=-options.rsx, b=options.rsx,
+                                             loc=0, scale=(options.rsx / options.rtx),
+                                             size=(1,), random_state=rng_state)
+
+                        logger.debug('Beam %d [%s] Magnet %3d random X shim [%f]', b, beam['name'], a, rpx)
+
+                        assert (-options.rsx <= rpx) and (rpx <= options.rsx)
+
+                    if hasattr(options, 'rsz') and hasattr(options, 'rtz') \
+                            and (options.rsz > 0) and (options.rtz > 0):
+                        rpz += truncnorm.rvs(a=-options.rsz, b=options.rsz,
+                                             loc=0, scale=(options.rsz / options.rtz),
+                                             size=(1,), random_state=rng_state)
+
+                        logger.debug('Beam %d [%s] Magnet %3d random Z shim [%f]', b, beam['name'], a, rpz)
+
+                        assert (-options.rsz <= rpz) and (rpz <= options.rsz)
+
+                    if hasattr(options, 'rss') and hasattr(options, 'rts') \
+                            and (options.rss > 0) and (options.rts > 0):
+                        rps += truncnorm.rvs(a=-options.rss, b=options.rss,
+                                             loc=0, scale=(options.rss / options.rts),
+                                             size=(1,), random_state=rng_state)
+
+                        logger.debug('Beam %d [%s] Magnet %3d random S shim [%f]', b, beam['name'], a, rps)
+
+                        assert (-options.rss <= rps) and (rps <= options.rss)
+
+                    position += np.array([rpx, rpz, rps], dtype=np.float32)
 
                     # Calculate the ideal bfield contribution of a perfect magnet in this position
                     per_magnet_bfield = generate_bfield(bfield_eval_points, dimensions, position)
@@ -219,6 +256,16 @@ if __name__ == "__main__":
     usage = "%prog [options] ID_Description_File Output_filename"
     parser = optparse.OptionParser(usage=usage)
     parser.add_option('-v', '--verbose', dest='verbose', help='Set the verbosity level [0-4]', default=0, type='int')
+
+    parser.add_option('--rand-seed', dest='seed', help='Random seed', default=None, type='int')
+
+    parser.add_option('--rand-trunc-x', dest='rtx', help='Truncated stddevs in X', default=3, type='float')
+    parser.add_option('--rand-trunc-z', dest='rtz', help='Truncated stddevs in Z', default=3, type='float')
+    parser.add_option('--rand-trunc-s', dest='rts', help='Truncated stddevs in S', default=3, type='float')
+
+    parser.add_option('--rand-scale-x', dest='rsx', help='Random scale in X in mm', default=0, type='float')
+    parser.add_option('--rand-scale-z', dest='rsz', help='Random scale in Z in mm', default=0, type='float')
+    parser.add_option('--rand-scale-s', dest='rss', help='Random scale in S in mm', default=0, type='float')
 
     (options, args) = parser.parse_args()
 
