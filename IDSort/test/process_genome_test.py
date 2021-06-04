@@ -75,7 +75,7 @@ class ProcessGenomeTest(unittest.TestCase):
 
                         exp_data = exp_h5_file.get(dataset)[()]
                         obs_data = obs_h5_file.get(dataset)[()]
-                        assert np.allclose(exp_data, obs_data)
+                        assert np.allclose(exp_data, obs_data, atol=1e-1)
 
             # Compare the output file to the expected one
             with open(exp_inp_path, 'r') as exp_inp_file, \

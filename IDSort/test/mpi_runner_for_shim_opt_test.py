@@ -215,7 +215,7 @@ class MpiRunnerForShimOptTest(unittest.TestCase):
 
                         exp_data = exp_h5_file.get(dataset)[()]
                         obs_data = obs_h5_file.get(dataset)[()]
-                        assert np.allclose(exp_data, obs_data)
+                        assert np.allclose(exp_data, obs_data, atol=1e-1)
 
         # Use (except + else) instead of (finally) so that output files can be inspected if the test fails
         except Exception as ex: raise ex
