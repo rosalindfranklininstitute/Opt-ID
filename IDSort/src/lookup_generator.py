@@ -24,6 +24,7 @@ import h5py
 import json
 import numpy as np
 from scipy.stats import truncnorm
+import pandas as pd
 
 from .logging_utils import logging, getLogger, setLoggerLevel
 logger = getLogger(__name__)
@@ -136,6 +137,11 @@ def process(options, args):
 
     logger.debug('Starting')
 
+    df_shim = None
+    if hasattr(options, 'shim_csv') and (options.shim_csv is not None):
+        logger.info('Loading shimming data from CSV file: [%s]', options.shim_csv)
+        df_shim = pd.read_csv(options.shim_csv)
+
     # TODO refactor arguments to accept json file as named parameter
     with open(args[0], 'r') as fp:
         data = json.load(fp)
@@ -162,6 +168,8 @@ def process(options, args):
     rng_state = np.random.RandomState(seed=(options.seed if (hasattr(options, 'seed') and
                                             (options.seed is None or options.seed > 0)) else None))
 
+    output_csv_rows = []
+
     try:
 
         with h5py.File(output_path, 'w') as outfile:
@@ -181,35 +189,34 @@ def process(options, args):
                     position, dimensions = np.array(mag['position']), np.array(mag['dimensions'])
 
                     rpx, rpz, rps = 0, 0, 0
-                    if hasattr(options, 'rsx') and hasattr(options, 'rtx') \
-                            and (options.rsx > 0) and (options.rtx > 0):
-                        rpx += truncnorm.rvs(a=-options.rsx, b=options.rsx,
-                                             loc=0, scale=(options.rsx / options.rtx),
-                                             size=(1,), random_state=rng_state)
 
+                    if hasattr(options, 'rsx') and (options.rsx > 0):
+
+                        rpx = rng_state.uniform(low=-options.rsx, high=options.rsx)
                         logger.debug('Beam %d [%s] Magnet %3d random X shim [%f]', b, beam['name'], a, rpx)
 
-                        assert (-options.rsx <= rpx) and (rpx <= options.rsx)
+                    if hasattr(options, 'rsz') and (options.rsz > 0):
 
-                    if hasattr(options, 'rsz') and hasattr(options, 'rtz') \
-                            and (options.rsz > 0) and (options.rtz > 0):
-                        rpz += truncnorm.rvs(a=-options.rsz, b=options.rsz,
-                                             loc=0, scale=(options.rsz / options.rtz),
-                                             size=(1,), random_state=rng_state)
-
+                        rpz = rng_state.uniform(low=-options.rsz, high=options.rsz)
                         logger.debug('Beam %d [%s] Magnet %3d random Z shim [%f]', b, beam['name'], a, rpz)
 
-                        assert (-options.rsz <= rpz) and (rpz <= options.rsz)
+                    if hasattr(options, 'rss') and (options.rss > 0):
 
-                    if hasattr(options, 'rss') and hasattr(options, 'rts') \
-                            and (options.rss > 0) and (options.rts > 0):
-                        rps += truncnorm.rvs(a=-options.rss, b=options.rss,
-                                             loc=0, scale=(options.rss / options.rts),
-                                             size=(1,), random_state=rng_state)
-
+                        rps = rng_state.uniform(low=-options.rss, high=options.rss)
                         logger.debug('Beam %d [%s] Magnet %3d random S shim [%f]', b, beam['name'], a, rps)
 
-                        assert (-options.rss <= rps) and (rps <= options.rss)
+                    if df_shim is not None:
+                        rpx += df_shim.loc[(df_shim['beam'] == beam['name']) & (df_shim['slot'] == a), 'x'].iloc[0]
+                        rpz += df_shim.loc[(df_shim['beam'] == beam['name']) & (df_shim['slot'] == a), 'z'].iloc[0]
+                        rps += df_shim.loc[(df_shim['beam'] == beam['name']) & (df_shim['slot'] == a), 's'].iloc[0]
+
+                    output_csv_rows += [{
+                        'beam': beam['name'],
+                        'slot': a,
+                        'x': float(rpx), 'z': float(rpz), 's': float(rps)
+                    }]
+
+                    logger.debug('Beam %d [%s] Magnet %3d [%s]', b, beam['name'], a, output_csv_rows[-1])
 
                     position += np.array([rpx, rpz, rps], dtype=np.float32)
 
@@ -245,6 +252,11 @@ def process(options, args):
 
                     logger.debug('Beam %d [%s] Magnet %3d bfield with shape [%s]', b, beam['name'], a, per_magnet_bfield.shape)
 
+            if hasattr(options, 'output_shim_csv') and (options.output_shim_csv is not None):
+                df_output_shim = pd.DataFrame(output_csv_rows)
+                df_output_shim.to_csv(options.output_shim_csv, index=False)
+
+
     except Exception as ex:
         logger.error('Failed to save lookup to [%s]', output_path, exc_info=ex)
         raise ex
@@ -257,11 +269,12 @@ if __name__ == "__main__":
     parser = optparse.OptionParser(usage=usage)
     parser.add_option('-v', '--verbose', dest='verbose', help='Set the verbosity level [0-4]', default=0, type='int')
 
-    parser.add_option('--rand-seed', dest='seed', help='Random seed', default=None, type='int')
+    parser.add_option('--shim-csv', dest='shim_csv', help='CSV file containing per slot shim offsets in XZS',
+                      default=None, type=str)
+    parser.add_option('--output-shim-csv', dest='output_shim_csv', help='Output a CSV file containing per slot shim offsets in XZS',
+                      default=None, type=str)
 
-    parser.add_option('--rand-trunc-x', dest='rtx', help='Truncated stddevs in X', default=3, type='float')
-    parser.add_option('--rand-trunc-z', dest='rtz', help='Truncated stddevs in Z', default=3, type='float')
-    parser.add_option('--rand-trunc-s', dest='rts', help='Truncated stddevs in S', default=3, type='float')
+    parser.add_option('--rand-seed', dest='seed', help='Random seed', default=None, type='int')
 
     parser.add_option('--rand-scale-x', dest='rsx', help='Random scale in X in mm', default=0, type='float')
     parser.add_option('--rand-scale-z', dest='rsz', help='Random scale in Z in mm', default=0, type='float')

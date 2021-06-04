@@ -219,7 +219,8 @@ def calculate_bfield_phase_error(info, bfield):
 
     # y is derived from w_1st_integral plus a factor that grows linearly along the length of the S axis
     sample_step = s_step_size * (1e-3 / (two_speed_of_light * gamma_sq))
-    y = (w_1st_integral / two_speed_of_light) + np.arange(0, sample_step * s_total_steps, sample_step)
+    y = (w_1st_integral / two_speed_of_light)
+    y += np.linspace(0, sample_step * s_total_steps, len(y))
     y = y[x[0]:(x[-1] + s_steps_per_qtr_period):s_steps_per_qtr_period] # Resample y at same sample rate as x
 
     # Compute linear line of best fit for the central trajectory

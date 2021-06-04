@@ -184,7 +184,7 @@ class MagLists():
         self.magnet_lists = {}
         for set_name in self.raw_magnets.magnet_sets.keys():
             mags = []
-            for mag in self.raw_magnets.magnet_sets[set_name].keys():
+            for mag in list(self.raw_magnets.magnet_sets[set_name].keys()):
                 # TODO document the components here "mag name", "flipped???", "???"
                 mags.append([mag, 1, 0])
             self.magnet_lists[set_name] = mags
