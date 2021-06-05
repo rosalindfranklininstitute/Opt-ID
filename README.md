@@ -1,4 +1,20 @@
-![GitHub](https://img.shields.io/github/license/rosalindfranklininstitute/Opt-ID?kill_cache=1) [![GitHub Workflow Status (branch)](https://github.com/rosalindfranklininstitute/Opt-ID/actions/workflows/ci.yml/badge.svg?branch=r1.1)](https://github.com/rosalindfranklininstitute/Opt-ID/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/rosalindfranklininstitute/Opt-ID/branch/r1.1/graph/badge.svg?token=pZp3wgitjN)](https://codecov.io/gh/rosalindfranklininstitute/Opt-ID)
+![GitHub](https://img.shields.io/github/license/rosalindfranklininstitute/Opt-ID?kill_cache=1) [![GitHub Workflow Status (branch)](https://github.com/rosalindfranklininstitute/Opt-ID/actions/workflows/ci.yml/badge.svg?branch=v1)](https://github.com/rosalindfranklininstitute/Opt-ID/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/rosalindfranklininstitute/Opt-ID/branch/v1/graph/badge.svg?token=pZp3wgitjN)](https://codecov.io/gh/rosalindfranklininstitute/Opt-ID)
+
+# Deprecated!
+
+Version 1.1.x of Opt-ID has been deprecated and is is not under active development.
+
+# Docker and Singularity Containers
+
+```
+docker pull rosalindfranklininstitute/opt-id:r1.1
+
+docker run -itd --name env -v $(pwd):/tmp/repo/ -w /tmp/repo/ rosalindfranklininstitute/opt-id:r1.1
+
+docker exec env python2 -m pytest --cov=/usr/local/Opt-ID/IDSort/src /usr/local/Opt-ID/IDSort/test/ --cov-report xml:coverage.xml
+
+docker stop env
+```
 
 # Opt-ID
 Code for the Optimisation of ID's using Python and Opt-AI
