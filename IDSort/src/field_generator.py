@@ -55,6 +55,77 @@ def generate_per_magnet_array(info, maglist, magnets):
 
     return beams
 
+def generate_availability(info, maglist, masks):
+    # Result dict for each beams data
+
+    # Track the current index of each magnet type
+    mag_indices = { 'HT': 0, 'HE': 0, 'VE': 0, 'HH': 0, 'VV': 0 }
+    available = {}
+
+    # Process each beam in the ID json data
+    for b, beam in enumerate(info['beams']):
+
+        # Process all magnets in this beam
+        for a, mag in enumerate(beam['mags']):
+
+            if mag['type'] not in available:
+                available[mag['type']] = []
+
+            is_available = False
+            if beam['name'] not in masks:
+                is_available = True
+            else:
+                for mask in masks[beam['name']]:
+
+                    if isinstance(mask, int):
+                        mask = int(mask)
+                        if mask < 0:
+                            mask = len(beam['mags']) + mask
+
+                        if mask == a:
+                            is_available = True
+                            break
+                    elif isinstance(mask, list):
+                        mask = list(mask)
+                        assert len(mask) == 2
+                        assert isinstance(mask[0], int)
+                        assert isinstance(mask[1], int)
+
+                        if mask[0] < 0:
+                            mask[0] = len(beam['mags']) + mask[0]
+                        if mask[1] < 0:
+                            mask[1] = len(beam['mags']) + mask[1]
+
+                        assert mask[0] <= mask[1]
+
+                        if mask[0] <= a <= mask[1]:
+                            is_available = True
+                            break
+                    else:
+                        raise Exception()
+
+            if is_available:
+                available[mag['type']].append(mag_indices[mag['type']])
+
+            # Update the index to the next magnet of this type
+            mag_indices[mag['type']] += 1
+
+    for mtype in available.keys():
+
+        nactive_slots = len(available[mtype])
+        available[mtype].extend(list(range(mag_indices[mtype], len(maglist.magnet_lists[mtype]))))
+        nactive_mags = len(available[mtype])
+
+        assert len(set(available[mtype])) == len(available[mtype])
+
+        print('Magnet type [%s] has [%d : %d] active magnets' % (mtype, nactive_slots, nactive_mags))
+
+    for mtype in available.keys():
+
+        print('Magnet type [%s] has active magnets [%s]' % (mtype, available[mtype]))
+
+    return available
+
 def compare_magnet_arrays(mag_array_a, mag_array_b, lookup):
     difference_map = {}
 

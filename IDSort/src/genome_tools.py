@@ -38,11 +38,12 @@ logger = getLogger(__name__)
 
 class BCell(object):
 
-    def __init__(self):
+    def __init__(self, available=None):
         self.age = 0
         self.fitness = None
         self.genome = None
         self.uid = binascii.hexlify(os.urandom(6)).decode()
+        self.available = available
 
     def clone(self):
         return copy.deepcopy(self)
@@ -75,8 +76,8 @@ class BCell(object):
 
 class ID_BCell(BCell):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, available=None):
+        super().__init__(available=available)
         self.mutations = 0
 
     def create(self, info, lookup, magnets, maglist, ref_trajectories):
@@ -101,7 +102,7 @@ class ID_BCell(BCell):
 
             # Clone the current genome and apply a number of random mutations
             child_magnet_lists = copy.deepcopy(self.genome)
-            child_magnet_lists.mutate(number_of_mutations)
+            child_magnet_lists.mutate(number_of_mutations, available=self.available)
 
             # Calculate the bfield of the child genome w.r.t to the parent one for efficiency
             child_per_magnet_array  = generate_per_magnet_array(info, child_magnet_lists, magnets)
@@ -110,7 +111,7 @@ class ID_BCell(BCell):
             child_fitness = calculate_trajectory_loss_from_array(info, child_bfield, ref_trajectories)
 
             # Create the child genome object
-            genome = ID_BCell()
+            genome = ID_BCell(available=self.available)
             genome.mutations = number_of_mutations
             genome.genome    = child_magnet_lists
             genome.fitness   = child_fitness
@@ -126,15 +127,15 @@ class ID_BCell(BCell):
 #      of the RNG and function call order
 class ID_Shim_BCell(BCell):
 
-    def __init__(self):
-        BCell.__init__(self)
+    def __init__(self, available=None):
+        BCell.__init__(self, available=available)
         self.mutations = 0
 
     def create(self, info, lookup, magnets, maglist, ref_trajectories, number_of_changes, original_bfield):
         self.magnets = magnets #added 22/03/19 ZP
         self.maglist = maglist
         self.changes = number_of_changes
-        self.create_genome(number_of_changes)
+        self.create_genome(number_of_changes, available=self.available)
         
         maglist = copy.deepcopy(self.maglist)
         maglist.mutate_from_list(self.genome)
@@ -157,8 +158,9 @@ class ID_Shim_BCell(BCell):
         
         if (available == None):
             #available = self.maglist.availability() maglist doesn't have an availability attribute
-            available = self.magnets.availability() #added 22/03/19 ZP
+            available = self.available if (self.available is not None) else self.magnets.availability() #added 22/03/19 ZP
             logging.debug("availability is %s"%(available))
+
         self.genome = []
         for i in range(number_of_mutations):
             # pick a list at random
@@ -180,11 +182,11 @@ class ID_Shim_BCell(BCell):
     #def create_mutant(self, number_of_mutations, available={'HH':(range(36,44,1)+range(22,27,1)+range(226,234,1)+range(212,217,1)+range(382,420,1)), 'VV':(range(36,44,1)+range(22,27,1)+range(226,234,1)+range(212,217,1)+range(382,419,1))}):
         if (available == None):
             #available = self.maglist.availability()
-            available = self.magnets.availability() #added 22/03/19 ZP
+            available = self.available if (self.available is not None) else self.magnets.availability()
         
         mutant = copy.deepcopy(self.genome)
         for i in range(number_of_mutations):
-            position = random.randint(0,len(mutant)-1)
+            position = random.randint(0, len(mutant)-1)
             # pick a list at random
             key = random.choice(list(available.keys()))
             # pick a flip or swap
@@ -219,9 +221,8 @@ class ID_Shim_BCell(BCell):
             logging.debug("Using real bfield")
         
         original_magnets = generate_per_magnet_array(info, self.maglist, magnets)
-        available = magnets.availability()
         maglist = copy.deepcopy(self.maglist)
-        mutation_list = self.create_mutant(number_of_mutations,available)
+        mutation_list = self.create_mutant(number_of_mutations, available=self.available)
         maglist.mutate_from_list(mutation_list)
         new_magnets = generate_per_magnet_array(info, maglist, magnets)
         update = compare_magnet_arrays(original_magnets, new_magnets, lookup)
@@ -233,14 +234,15 @@ class ID_Shim_BCell(BCell):
 
         for i in range(number_of_children):
             maglist = copy.deepcopy(self.maglist)
-            mutation_list = self.create_mutant(number_of_mutations,available)
+            mutation_list = self.create_mutant(number_of_mutations, available=self.available)
             maglist.mutate_from_list(mutation_list)
             new_magnets = generate_per_magnet_array(info, maglist, magnets)
             update = compare_magnet_arrays(original_magnets, new_magnets, lookup)
-            child = ID_Shim_BCell()
+            child = ID_Shim_BCell(available=self.available)
             child.mutations = number_of_mutations
             child.genome = mutation_list
             child.maglist = self.maglist
+            child.magnets = self.magnets
             updated_bfield = np.array(original_bfield)
             for beam in update.keys() :
                 if update[beam].size != 0:

@@ -31,6 +31,7 @@ from .genome_tools import ID_Shim_BCell, ID_BCell
 
 from .field_generator import generate_reference_magnets, \
                              generate_per_magnet_array,  \
+                             generate_availability,      \
                              generate_bfield,            \
                              compare_magnet_arrays,      \
                              calculate_bfield_phase_error
@@ -179,14 +180,25 @@ def process(options, args):
     # ref_strx, ref_strz = calculate_trajectory_straightness(info, ref_trajectories)
     # logger.debug('Perfect bfield trajectory straightness [%s] [%s]', ref_strx, ref_strz)
 
+    full_available = ref_magnet_sets.availability()
+    for mtype in full_available.keys():
+        nactive_mags = len(full_available[mtype])
+        assert len(set(full_available[mtype])) == len(full_available[mtype])
+        print('Magnet type [%s] has [%d] full active magnets' % (mtype, nactive_mags))
+    for mtype in full_available.keys():
+        print('Magnet type [%s] has full active magnets [%s]' % (mtype, full_available[mtype]))
+
+    available = None if (options.available is None) else \
+        generate_availability(info, ref_magnet_lists, options.available)
+
     # Attempt to load the reference genome to seed all the new genomes
     try:
         logger.info('Loading reference genome [%s]', options.genome_filename)
 
-        initial_genome = ID_BCell()
+        initial_genome = ID_BCell(available=available)
         initial_genome.load(options.genome_filename)
 
-        ref_genome = ID_BCell()
+        ref_genome = ID_BCell(available=available)
         ref_genome.load(options.genome_filename)
 
         assert initial_genome.genome == ref_genome.genome
@@ -259,7 +271,7 @@ def process(options, args):
                      genome_index, options.setup, options.number_of_changes)
 
         # Create a new random genome and add it to the population
-        shim_genome = ID_Shim_BCell()
+        shim_genome = ID_Shim_BCell(available=available)
         shim_genome.create(info, lookup, magnet_sets, initial_genome.genome, ref_trajectories,
                            options.number_of_changes, real_bfield)
         population.append(shim_genome)
@@ -377,7 +389,16 @@ if __name__ == "__main__":
     parser.add_option("--seed", dest="seed", help="Seed the random number generator or not", action="store_true", default=False)
     parser.add_option("--seed_value", dest="seed_value", help="Seed value for the random number generator")
 
+    parser.add_option("--available", dest="available", default=None, type="str",
+                      help="A dictionary '{ \"TOP\": [2, [4, 8], 10], \"BTM\": [[4, 8]] }' "
+                           "of beam names and ranges of active slots.")
+
     (options, args) = parser.parse_args()
+
+    if options.available is not None:
+        options.available = dict(json.loads(options.available))
+
+    print(options.available)
 
     try:
         process(options, args)

@@ -57,6 +57,7 @@ class MpiRunnerForShimOptTest(unittest.TestCase):
 
         # Prepare parameters for process function
         options = {
+            'available'           : None,
             'iterations'          : 3,
             'number_of_mutations' : 5,
             'id_filename'         : inp_json_path,
@@ -187,6 +188,8 @@ class MpiRunnerForShimOptTest(unittest.TestCase):
                     # Offloads comparison to MagLists::__eq__ method
                     assert exp_maglist == obs_maglist
 
+
+
             # Compare the h5 files
             for exp_h5_path in exp_h5_paths:
 
@@ -216,6 +219,98 @@ class MpiRunnerForShimOptTest(unittest.TestCase):
                         exp_data = exp_h5_file.get(dataset)[()]
                         obs_data = obs_h5_file.get(dataset)[()]
                         assert np.allclose(exp_data, obs_data, atol=1e-1)
+
+        # Use (except + else) instead of (finally) so that output files can be inspected if the test fails
+        except Exception as ex: raise ex
+        else:
+
+            # Clear any observed output files after running successful test
+            shutil.rmtree(obs_path, ignore_errors=True)
+            os.makedirs(obs_path)
+
+    def test_process_with_available(self):
+        # inp == Inputs
+        # exp == Expected Outputs
+        # obs == Observed Outputs
+
+        data_path = 'IDSort/test/data/mpi_runner_for_shim_opt_test/test_process_with_available'
+        inp_path  = os.path.join(data_path, 'inputs')
+        exp_path  = os.path.join(data_path, 'expected_outputs')
+        obs_path  = os.path.join(data_path, 'observed_outputs')
+
+        # Prepare input file paths
+        inp_json_path   = os.path.join(inp_path, 'test_cpmu_shim.json')
+        inp_mag_path    = os.path.join(inp_path, 'test_cpmu.mag')
+        inp_h5_path     = os.path.join(inp_path, 'test_cpmu_shim.h5')
+        inp_genome_path = os.path.join(inp_path, '1.0_000_test_genome.genome') # Renamed from 1.12875826e-08_000_7c51ecd01f73.genome
+        inp_bfield_path = os.path.join(inp_path, '1.12875826e-08_000_7c51ecd01f73.genome.h5')
+
+        # Always clear any observed output files before running test
+        shutil.rmtree(obs_path, ignore_errors=True)
+        os.makedirs(obs_path)
+
+        # Prepare parameters for process function
+        options = {
+            'available'           : { "Top Beam": [0, [1, 2], [-3, -2], -1], "Bottom Beam": [0, [1, 2], [-3, -2], -1] },
+            'iterations'          : 3,
+            'number_of_mutations' : 5,
+            'id_filename'         : inp_json_path,
+            'magnets_filename'    : inp_mag_path,
+            'lookup_filename'     : inp_h5_path,
+            'bfield_filename'     : inp_bfield_path,
+            'genome_filename'     : inp_genome_path,
+            'setup'               : 24,
+            'number_of_changes'   : 2,
+            'mutations'           : 5,
+            'c'                   : 2,
+            'e'                   : 0.0,
+            'restart'             : False,
+            'max_age'             : 10,
+            'scale'               : 10.0,
+            'singlethreaded'      : True,
+            'seed'                : True,
+            'seed_value'          : 30,
+            'verbose'             : 4,
+        }
+        options_named = namedtuple("options", options.keys())(*options.values())
+        args = [
+            obs_path
+        ]
+
+        try:
+
+            # Execute the function under test
+            process(options_named, args)
+
+            # Find observed output files
+            obs_genome_paths = [os.path.join(obs_path, file_name)
+                                for file_name in os.listdir(obs_path) if '.genome' in file_name]
+
+            # Compare maglists for each genome
+            count = 0
+            for obs_genome_path in obs_genome_paths:
+                if 'A' not in obs_genome_path: continue
+
+                # Compare the output file to the expected one
+                with open(obs_genome_path, 'rb') as obs_genome_file, \
+                     open(inp_genome_path, 'rb') as inp_genome_file:
+
+                    obs_maglist = pickle.load(obs_genome_file)
+                    inp_maglist = pickle.load(inp_genome_file)
+
+                    assert (type(obs_maglist) is MagLists)
+                    assert (type(inp_maglist) is MagLists)
+
+                    for mtype in inp_maglist.magnet_lists.keys():
+                        count += 1 if inp_maglist.magnet_lists[mtype] != obs_maglist.magnet_lists[mtype] else 0
+
+                    for index, (inp_magnet, obs_magnet) in enumerate(zip(inp_maglist.magnet_lists['HH'],
+                                                                         obs_maglist.magnet_lists['HH'])):
+
+                        if 0 < index < (452 - 1):
+                            assert inp_magnet == obs_magnet
+
+            assert count > 0
 
         # Use (except + else) instead of (finally) so that output files can be inspected if the test fails
         except Exception as ex: raise ex
