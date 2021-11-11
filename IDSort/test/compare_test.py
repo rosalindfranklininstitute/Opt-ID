@@ -35,6 +35,7 @@ class CompareTest(unittest.TestCase):
         options = {
             'verbose' : 4,
             'legacy': True,
+            'full': False,
         }
         options_named = namedtuple("options", options.keys())(*options.values())
         args = [
