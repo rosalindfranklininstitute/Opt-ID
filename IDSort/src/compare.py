@@ -6,6 +6,8 @@ Takes 3 arguments:
 '''
 
 import json
+
+import numpy as np
 import pandas as pd
 from collections import Counter
 from .genome_tools import ID_BCell
