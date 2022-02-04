@@ -66,7 +66,8 @@ jobs:
 
       - name: Docker container tests
         run: |
-          docker run -it -v $(pwd):/tmp/repo/ -w /tmp/repo/ $QUAY_IMAGE_NAME python2 -m pytest --cov=/usr/local/Opt-ID/IDSort/src /usr/local/Opt-ID/IDSort/test/ --cov-report xml:coverage.xml --cov-report term-missing
+          docker run --rm -v $(pwd):/tmp/repo/ -w /tmp/repo/ $QUAY_IMAGE_NAME \
+            python2 -m pytest --cov=/usr/local/Opt-ID/IDSort/src /usr/local/Opt-ID/IDSort/test/ --cov-report xml:coverage.xml --cov-report term-missing
 
       - name: Docker container push to Quay.io
         run: |
@@ -96,3 +97,8 @@ jobs:
         run: |
           echo "${{ secrets.SYLABS_TOKEN }}" | docker exec singularity_env singularity remote login
           docker exec singularity_env singularity push ${{ secrets.REPO }}.sif library://$SYLABS_IMAGE_NAME
+          
+      - name: Singularity container halt
+        run: |
+          docker stop singularity_env
+          docker rm singularity_env
