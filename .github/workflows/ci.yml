@@ -18,14 +18,18 @@ name: CI - Build Container Images and Test
 on:
   push:
     branches:
-      - '**'
+      - 'v*'
+    tags:
+      - 'v*'
     paths-ignore:
       - README.md
       - README.template
       - .github/workflows/readme.yml
   pull_request:
     branches:
-      - '**'
+      - 'v*'
+    tags:
+      - 'v*'
     paths-ignore:
       - README.md
       - README.template
@@ -39,18 +43,11 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-      # Configure environment variable depending on which branch we are running on
-      - name: Set env to master
-        if: endsWith(github.ref, '/master')
-        run: echo "REPO_TAG=latest" >> $GITHUB_ENV
-      - name: Set env to branch
-        if: (!endsWith(github.ref, '/master'))
-        run: echo "REPO_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
-
       - name: Set image names
         run: |
-          echo "QUAY_IMAGE_NAME=quay.io/${{ secrets.QUAY_ORG }}/${{ secrets.QUAY_REPO }}:$REPO_TAG" >> $GITHUB_ENV
-          echo "SYLABS_IMAGE_NAME=${{ secrets.SYLABS_ORG }}/${{ secrets.SYLABS_REPO }}/${{ secrets.SYLABS_REPO }}:$REPO_TAG" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          echo "QUAY_IMAGE_NAME=quay.io/${{ secrets.QUAY_ORG }}/${{ secrets.QUAY_REPO }}:$IMAGE_TAG" >> $GITHUB_ENV
+          echo "SYLABS_IMAGE_NAME=${{ secrets.SYLABS_ORG }}/${{ secrets.SYLABS_REPO }}/${{ secrets.SYLABS_REPO }}:$IMAGE_TAG" >> $GITHUB_ENV
 
       # Checks-out repository under $(pwd)
       - uses: actions/checkout@v2
@@ -89,17 +86,13 @@ jobs:
         run: |
           docker exec singularity_env singularity build ${{ secrets.SYLABS_REPO }}.sif docker://$QUAY_IMAGE_NAME
           
-      #- name: Singularity container tests
-      #  run: |
-      #    docker exec singularity_env singularity run ${{ secrets.SYLABS_REPO }}.sif python2 -m pytest  /usr/local/Opt-ID/IDSort/test/
-          
       - name: Singularity container push to Sylabs.io
         run: |
           echo "${{ secrets.SYLABS_TOKEN }}" > sylabs_token
           docker exec singularity_env singularity remote login --tokenfile sylabs_token
           docker exec singularity_env singularity push --allow-unsigned ${{ secrets.SYLABS_REPO }}.sif library://$SYLABS_IMAGE_NAME
           
-      - name: Singularity container halt
+      - name: Singularity container environment halt
         run: |
           docker stop singularity_env
           docker rm singularity_env
