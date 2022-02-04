@@ -35,53 +35,64 @@ on:
 
 jobs:
   build_env:
-    name: Build Docker Image and Test
+    name: Build containers and test
     runs-on: ubuntu-20.04
 
     steps:
       # Configure environment variable depending on which branch we are running on
       - name: Set env to master
         if: endsWith(github.ref, '/master')
-        run: echo "DOCKER_REPO_TAG=opt-id:latest" >> $GITHUB_ENV
+        run: echo "REPO_TAG=latest" >> $GITHUB_ENV
       - name: Set env to branch
         if: (!endsWith(github.ref, '/master'))
-        run: echo "DOCKER_REPO_TAG=opt-id:${GITHUB_REF##*/}" >> $GITHUB_ENV
+        run: echo "REPO_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
-      - name: Set image name
-        run: echo "DOCKER_REPO_NAME=${{ secrets.DOCKER_ORG }}/$DOCKER_REPO_TAG" >> $GITHUB_ENV
+      - name: Set image names
+        run: |
+          echo "QUAY_IMAGE_NAME=${{ secrets.QUAY_ORG }}/${{ secrets.REPO }}:$REPO_TAG" >> $GITHUB_ENV
+          echo "SYLABS_IMAGE_NAME=${{ secrets.SYLABS_ORG }}/${{ secrets.REPO }}:$REPO_TAG" >> $GITHUB_ENV
 
       # Checks-out repository under $(pwd)
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
 
-      # Build Docker image, push image to Dockerhub on success
-      - name: Pull existing Docker image
-        run: docker pull $DOCKER_REPO_NAME || true
+      # Build Docker image, push image to Quay.io on success
 
-      - name: Build Docker image
+      - name: Docker container build
         run: |
-          docker build --pull --cache-from $DOCKER_REPO_NAME --tag $DOCKER_REPO_NAME -f Dockerfile .
+          docker pull quay.io/$QUAY_IMAGE_NAME || true
+          docker build --pull --cache-from quay.io/$QUAY_IMAGE_NAME --tag $QUAY_IMAGE_NAME -f Dockerfile .
 
-      - name: Start container
+      - name: Docker container tests
         run: |
-          docker run -itd --name env -v $(pwd):/tmp/repo/ -w /tmp/repo/ $DOCKER_REPO_NAME
+          docker run -it -v $(pwd):/tmp/repo/ -w /tmp/repo/ $QUAY_IMAGE_NAME python2 -m pytest --cov=/usr/local/Opt-ID/IDSort/src /usr/local/Opt-ID/IDSort/test/ --cov-report xml:coverage.xml --cov-report term-missing
 
-      - name: Execute tests within container
+      - name: Docker container push to Quay.io
         run: |
-          docker exec env python2 -m pytest --cov=/usr/local/Opt-ID/IDSort/src /usr/local/Opt-ID/IDSort/test/ --cov-report xml:coverage.xml --cov-report term-missing
+          echo "${{ secrets.QUAY_TOKEN }}" | docker login -u "${{ secrets.QUAY_USERNAME }}" --password-stdin quay.io
+          docker push quay.io/$QUAY_IMAGE_NAME
 
-      - name: Halt container
-        run: docker stop env
-
-      - name: Submit coverage to Codecov
+      - name: Codecov push coverage results
         run: |
           bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} -f coverage.xml
-
-      - name: Halt container
-        run: docker stop env
-
-      - name: Push Docker image to Dockerhub
+          
+      # Convert Docker image to Singularity image and push to Sylabs.io on success
+        
+      - name: Singularity container environment
         run: |
-          echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-          docker push $DOCKER_REPO_NAME
+          docker pull quay.io/singularity/singularity:v3.9.4-slim
+          docker run -itd --name singularity_env -v $(pwd):/tmp/repo/ -w /tmp/repo/ quay.io/singularity/singularity:v3.9.4-slim
+          
+      - name: Singularity container build
+        run: |
+          docker exec singularity_env singularity build ${{ secrets.REPO }}.sif docker://quay.io/$QUAY_IMAGE_NAME
+          
+      - name: Singularity container tests
+        run: |
+          docker exec singularity_env singularity run ${{ secrets.REPO }}.sif python2 -m pytest  /usr/local/Opt-ID/IDSort/test/
+          
+      - name: Singularity container push to Sylabs.io
+        run: |
+          echo "${{ secrets.SYLABS_TOKEN }}" | docker exec singularity_env singularity remote login
+          docker exec singularity_env singularity push ${{ secrets.REPO }}.sif library://$SYLABS_IMAGE_NAME
