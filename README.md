@@ -7,13 +7,17 @@ Version 1.1.x of Opt-ID has been deprecated and is is not under active developme
 # Docker and Singularity Containers
 
 ```
-docker pull rosalindfranklininstitute/opt-id:v1
+docker run -itd --name optid -v $(pwd):/tmp/repo/ -w /tmp/repo/ quay.io/rosalindfranklininstitute/opt-id:v1
 
-docker run -itd --name env -v $(pwd):/tmp/repo/ -w /tmp/repo/ rosalindfranklininstitute/opt-id:v1
+docker exec optid python2 -m pytest --cov=/usr/local/Opt-ID/IDSort/src /usr/local/Opt-ID/IDSort/test/ --cov-report xml:coverage.xml
 
-docker exec env python2 -m pytest --cov=/usr/local/Opt-ID/IDSort/src /usr/local/Opt-ID/IDSort/test/ --cov-report xml:coverage.xml
+docker stop optid
+docker rm optid
+```
 
-docker stop env
+```
+singularity pull library://rosalindfranklininstitute/optid/optid:v1
+singularity run optid_v1.sif python3 -m IDSort.src.optid --help
 ```
 
 # Opt-ID
