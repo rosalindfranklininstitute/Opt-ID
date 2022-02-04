@@ -49,8 +49,8 @@ jobs:
 
       - name: Set image names
         run: |
-          echo "QUAY_IMAGE_NAME=quay.io/${{ secrets.QUAY_ORG }}/${{ secrets.REPO }}:$REPO_TAG" >> $GITHUB_ENV
-          echo "SYLABS_IMAGE_NAME=${{ secrets.SYLABS_ORG }}/${{ secrets.REPO }}:$REPO_TAG" >> $GITHUB_ENV
+          echo "QUAY_IMAGE_NAME=quay.io/${{ secrets.QUAY_ORG }}/${{ secrets.QUAY_REPO }}:$REPO_TAG" >> $GITHUB_ENV
+          echo "SYLABS_IMAGE_NAME=${{ secrets.SYLABS_ORG }}/${{ secrets.SYLABS_REPO }}:$REPO_TAG" >> $GITHUB_ENV
 
       # Checks-out repository under $(pwd)
       - uses: actions/checkout@v2
@@ -87,17 +87,17 @@ jobs:
           
       - name: Singularity container build
         run: |
-          docker exec singularity_env singularity build ${{ secrets.REPO }}.sif docker://$QUAY_IMAGE_NAME
+          docker exec singularity_env singularity build ${{ secrets.SYLABS_REPO }}.sif docker://$QUAY_IMAGE_NAME
           
       #- name: Singularity container tests
       #  run: |
-      #    docker exec singularity_env singularity run ${{ secrets.REPO }}.sif python2 -m pytest  /usr/local/Opt-ID/IDSort/test/
+      #    docker exec singularity_env singularity run ${{ secrets.SYLABS_REPO }}.sif python2 -m pytest  /usr/local/Opt-ID/IDSort/test/
           
       - name: Singularity container push to Sylabs.io
         run: |
           echo "${{ secrets.SYLABS_TOKEN }}" > sylabs_token
           docker exec singularity_env singularity remote login --tokenfile sylabs_token
-          docker exec singularity_env singularity push --allow-unsigned ${{ secrets.REPO }}.sif library://$SYLABS_IMAGE_NAME
+          docker exec singularity_env singularity push --allow-unsigned ${{ secrets.SYLABS_REPO }}.sif library://$SYLABS_IMAGE_NAME
           
       - name: Singularity container halt
         run: |
