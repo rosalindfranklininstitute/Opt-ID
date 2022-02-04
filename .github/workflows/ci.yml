@@ -49,7 +49,7 @@ jobs:
 
       - name: Set image names
         run: |
-          echo "QUAY_IMAGE_NAME=${{ secrets.QUAY_ORG }}/${{ secrets.REPO }}:$REPO_TAG" >> $GITHUB_ENV
+          echo "QUAY_IMAGE_NAME=quay.io/${{ secrets.QUAY_ORG }}/${{ secrets.REPO }}:$REPO_TAG" >> $GITHUB_ENV
           echo "SYLABS_IMAGE_NAME=${{ secrets.SYLABS_ORG }}/${{ secrets.REPO }}:$REPO_TAG" >> $GITHUB_ENV
 
       # Checks-out repository under $(pwd)
@@ -61,8 +61,8 @@ jobs:
 
       - name: Docker container build
         run: |
-          docker pull quay.io/$QUAY_IMAGE_NAME || true
-          docker build --pull --cache-from quay.io/$QUAY_IMAGE_NAME --tag $QUAY_IMAGE_NAME -f Dockerfile .
+          docker pull $QUAY_IMAGE_NAME || true
+          docker build --pull --cache-from $QUAY_IMAGE_NAME --tag $QUAY_IMAGE_NAME -f Dockerfile .
 
       - name: Docker container tests
         run: |
@@ -72,7 +72,7 @@ jobs:
       - name: Docker container push to Quay.io
         run: |
           echo "${{ secrets.QUAY_TOKEN }}" | docker login -u "${{ secrets.QUAY_USERNAME }}" --password-stdin quay.io
-          docker push quay.io/$QUAY_IMAGE_NAME
+          docker push $QUAY_IMAGE_NAME
 
       - name: Codecov push coverage results
         run: |
@@ -87,7 +87,7 @@ jobs:
           
       - name: Singularity container build
         run: |
-          docker exec singularity_env singularity build ${{ secrets.REPO }}.sif docker://quay.io/$QUAY_IMAGE_NAME
+          docker exec singularity_env singularity build ${{ secrets.REPO }}.sif docker://$QUAY_IMAGE_NAME
           
       - name: Singularity container tests
         run: |
