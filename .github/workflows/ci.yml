@@ -87,11 +87,11 @@ jobs:
           
       - name: Singularity container build
         run: |
-          docker exec singularity_env singularity build ${{ secrets.REPO }}.sif docker://$QUAY_IMAGE_NAME
+          docker exec singularity_env singularity build --fakeroot ${{ secrets.REPO }}.sif docker://$QUAY_IMAGE_NAME
           
       - name: Singularity container tests
         run: |
-          docker exec singularity_env singularity run --userns ${{ secrets.REPO }}.sif python2 -m pytest  /usr/local/Opt-ID/IDSort/test/
+          docker exec singularity_env singularity run --fakeroot --userns ${{ secrets.REPO }}.sif python2 -m pytest  /usr/local/Opt-ID/IDSort/test/
           
       - name: Singularity container push to Sylabs.io
         run: |
