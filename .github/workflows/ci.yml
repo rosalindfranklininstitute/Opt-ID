@@ -18,14 +18,18 @@ name: CI - Build Container Images and Test
 on:
   push:
     branches:
-      - '**'
+      - 'v*'
+    tags:
+      - 'v*'
     paths-ignore:
       - README.md
       - README.template
       - .github/workflows/readme.yml
   pull_request:
     branches:
-      - '**'
+      - 'v*'
+    tags:
+      - 'v*'
     paths-ignore:
       - README.md
       - README.template
@@ -35,53 +39,61 @@ on:
 
 jobs:
   build_env:
-    name: Build Docker Image and Test
+    name: Build containers and test
     runs-on: ubuntu-20.04
 
     steps:
-      # Configure environment variable depending on which branch we are running on
-      - name: Set env to master
-        if: endsWith(github.ref, '/master')
-        run: echo "DOCKER_REPO_TAG=opt-id:latest" >> $GITHUB_ENV
-      - name: Set env to branch
-        if: (!endsWith(github.ref, '/master'))
-        run: echo "DOCKER_REPO_TAG=opt-id:${GITHUB_REF##*/}" >> $GITHUB_ENV
-
-      - name: Set image name
-        run: echo "DOCKER_REPO_NAME=${{ secrets.DOCKER_ORG }}/$DOCKER_REPO_TAG" >> $GITHUB_ENV
+      - name: Set image names
+        run: |
+          echo "IMAGE_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          echo "QUAY_IMAGE_NAME=quay.io/${{ secrets.QUAY_ORG }}/${{ secrets.QUAY_REPO }}:$IMAGE_TAG" >> $GITHUB_ENV
+          echo "SYLABS_IMAGE_NAME=${{ secrets.SYLABS_ORG }}/${{ secrets.SYLABS_REPO }}/${{ secrets.SYLABS_REPO }}:$IMAGE_TAG" >> $GITHUB_ENV
 
       # Checks-out repository under $(pwd)
       - uses: actions/checkout@v2
         with:
           submodules: 'recursive'
 
-      # Build Docker image, push image to Dockerhub on success
-      - name: Pull existing Docker image
-        run: docker pull $DOCKER_REPO_NAME || true
+      # Build Docker image, push image to Quay.io on success
 
-      - name: Build Docker image
+      - name: Docker container build
         run: |
-          docker build --pull --cache-from $DOCKER_REPO_NAME --tag $DOCKER_REPO_NAME -f Dockerfile .
+          docker pull $QUAY_IMAGE_NAME || true
+          docker build --pull --cache-from $QUAY_IMAGE_NAME --tag $QUAY_IMAGE_NAME -f Dockerfile .
 
-      - name: Start container
+      - name: Docker container tests
         run: |
-          docker run -itd --name env -v $(pwd):/tmp/repo/ -w /tmp/repo/ $DOCKER_REPO_NAME
+          docker run --rm -v $(pwd):/tmp/repo/ -w /tmp/repo/ $QUAY_IMAGE_NAME \
+            python -m pytest --cov=/usr/local/Opt-ID/IDSort/src /usr/local/Opt-ID/IDSort/test/ --cov-report xml:coverage.xml --cov-report term-missing
 
-      - name: Execute tests within container
+      - name: Docker container push to Quay.io
         run: |
-          docker exec env python -m pytest --cov=/usr/local/Opt-ID/IDSort/src /usr/local/Opt-ID/IDSort/test/ --cov-report xml:coverage.xml --cov-report term-missing
+          echo "${{ secrets.QUAY_TOKEN }}" | docker login -u "${{ secrets.QUAY_USERNAME }}" --password-stdin quay.io
+          docker push $QUAY_IMAGE_NAME
 
-      - name: Halt container
-        run: docker stop env
-
-      - name: Submit coverage to Codecov
+      - name: Codecov push coverage results
         run: |
           bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} -f coverage.xml
-
-      - name: Halt container
-        run: docker stop env
-
-      - name: Push Docker image to Dockerhub
+          
+      # Convert Docker image to Singularity image and push to Sylabs.io on success
+        
+      - name: Singularity container environment
         run: |
-          echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-          docker push $DOCKER_REPO_NAME
+          docker pull quay.io/singularity/singularity:v3.9.4-slim
+          docker run --name singularity_env -itd --entrypoint /bin/bash -v $(pwd):/tmp/repo/ -w /tmp/repo/ quay.io/singularity/singularity:v3.9.4-slim
+          
+      - name: Singularity container build
+        run: |
+          docker exec singularity_env singularity build ${{ secrets.SYLABS_REPO }}.sif docker://$QUAY_IMAGE_NAME
+          
+      - name: Singularity container push to Sylabs.io
+        run: |
+          echo "${{ secrets.SYLABS_TOKEN }}" > sylabs_token
+          docker exec singularity_env singularity remote login --tokenfile sylabs_token
+          docker exec singularity_env singularity push --allow-unsigned ${{ secrets.SYLABS_REPO }}.sif library://$SYLABS_IMAGE_NAME
+          
+      - name: Singularity container environment halt
+        run: |
+          docker stop singularity_env
+          docker rm singularity_env
+          
