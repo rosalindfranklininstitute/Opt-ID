@@ -17,7 +17,7 @@ docker rm optid
 
 ```
 singularity pull library://rosalindfranklininstitute/optid/optid:v1
-singularity run optid_v1.sif python3 -m IDSort.src.optid --help
+singularity run optid_v1.sif python2 -m IDSort.src.id_setup --help
 ```
 
 # Opt-ID
