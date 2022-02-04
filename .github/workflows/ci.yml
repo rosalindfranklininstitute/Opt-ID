@@ -43,9 +43,13 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
+      
+      - name: Set branch name
+        run: |
+          echo "REPO_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
+    
       - name: Set image names
         run: |
-          echo "IMAGE_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
           echo "QUAY_IMAGE_NAME=quay.io/${{ secrets.QUAY_ORG }}/${{ secrets.QUAY_REPO }}:$IMAGE_TAG" >> $GITHUB_ENV
           echo "SYLABS_IMAGE_NAME=${{ secrets.SYLABS_ORG }}/${{ secrets.SYLABS_REPO }}/${{ secrets.SYLABS_REPO }}:$IMAGE_TAG" >> $GITHUB_ENV
 
