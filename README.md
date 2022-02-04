@@ -11,13 +11,15 @@ docker run -itd --name optid -v $(pwd):/tmp/repo/ -w /tmp/repo/ quay.io/rosalind
 
 docker exec optid python2 -m pytest --cov=/usr/local/Opt-ID/IDSort/src /usr/local/Opt-ID/IDSort/test/ --cov-report xml:coverage.xml
 
+docker exec optid python2 -m IDSort.src.id_setup --help
+
 docker stop optid
 docker rm optid
 ```
 
 ```
 singularity pull library://rosalindfranklininstitute/optid/optid:v1
-singularity run optid_v1.sif python3 -m IDSort.src.optid --help
+singularity run optid_v1.sif python2 -m IDSort.src.id_setup --help
 ```
 
 # Opt-ID
