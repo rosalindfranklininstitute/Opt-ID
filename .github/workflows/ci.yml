@@ -95,7 +95,8 @@ jobs:
           
       - name: Singularity container push to Sylabs.io
         run: |
-          echo "${{ secrets.SYLABS_TOKEN }}" | docker exec singularity_env singularity remote login
+          echo "${{ secrets.SYLABS_TOKEN }}" > sylabs_token
+          docker exec singularity_env singularity remote login --tokenfile sylabs_token
           docker exec singularity_env singularity push ${{ secrets.REPO }}.sif library://$SYLABS_IMAGE_NAME
           
       - name: Singularity container halt
