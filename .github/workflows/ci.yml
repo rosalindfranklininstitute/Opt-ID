@@ -91,7 +91,7 @@ jobs:
           
       - name: Singularity container tests
         run: |
-          docker exec singularity_env singularity run ${{ secrets.REPO }}.sif python2 -m pytest  /usr/local/Opt-ID/IDSort/test/
+          docker exec singularity_env singularity run --userns ${{ secrets.REPO }}.sif python2 -m pytest  /usr/local/Opt-ID/IDSort/test/
           
       - name: Singularity container push to Sylabs.io
         run: |
