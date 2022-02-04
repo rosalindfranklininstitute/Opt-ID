@@ -68,7 +68,7 @@ jobs:
       - name: Docker container tests
         run: |
           docker run --rm -v $(pwd):/tmp/repo/ -w /tmp/repo/ $QUAY_IMAGE_NAME \
-            python2 -m pytest --cov=/usr/local/Opt-ID/IDSort/src /usr/local/Opt-ID/IDSort/test/ --cov-report xml:coverage.xml --cov-report term-missing
+            python -m pytest --cov=/usr/local/Opt-ID/IDSort/src /usr/local/Opt-ID/IDSort/test/ --cov-report xml:coverage.xml --cov-report term-missing
 
       - name: Docker container push to Quay.io
         run: |
