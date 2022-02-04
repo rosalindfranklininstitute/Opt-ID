@@ -83,11 +83,11 @@ jobs:
       - name: Singularity container environment
         run: |
           docker pull quay.io/singularity/singularity:v3.9.4-slim
-          docker run -itd --name singularity_env quay.io/singularity/singularity:v3.9.4-slim
+          docker run --name singularity_env -itd --entrypoint /bin/bash -v $(pwd):/tmp/repo/ -w /tmp/repo/ quay.io/singularity/singularity:v3.9.4-slim
           
       - name: Singularity container build
         run: |
-          docker exec singularity_env singularity build ${{ secrets.REPO }}.sif docker-daemon:$QUAY_IMAGE_NAME
+          docker exec singularity_env singularity build ${{ secrets.REPO }}.sif docker://$QUAY_IMAGE_NAME
           
       - name: Singularity container tests
         run: |
@@ -102,3 +102,4 @@ jobs:
         run: |
           docker stop singularity_env
           docker rm singularity_env
+          
