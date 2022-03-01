@@ -1,0 +1,12 @@
+more_itertools
+numpy
+nptyping
+beartype
+h5py
+pandas
+pandera
+matplotlib
+sect
+vtk
+pyvista
+tetgen
