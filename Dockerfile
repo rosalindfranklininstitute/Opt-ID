@@ -15,7 +15,7 @@
 FROM quay.io/rosalindfranklininstitute/jax:v0.3.1
 
 # Install dependencies
-RUN apt-get install -y ffmpeg libsm6 libxext6 && \
+RUN apt-get update -y && apt-get install -y ffmpeg libsm6 libxext6 && \
     apt-get autoremove -y --purge && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
 # Build specific OpenMPI with extensions
