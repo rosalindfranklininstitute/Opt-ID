@@ -14,6 +14,7 @@
 
 
 # External Imports
+from functools import partial
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -57,7 +58,7 @@ def unit_limits(n):
     return -limit, limit
 
 
-@jax.partial(jax.jit, static_argnums=(0, 1, 2))
+@partial(jax.jit, static_argnums=(0, 1, 2))
 def jnp_unit_lattice(x, z, s):
     """
     Generate a 3-lattice of XZS coordinates across the unit-cube at origin.
