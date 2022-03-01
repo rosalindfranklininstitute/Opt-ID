@@ -6,7 +6,7 @@ h5py
 pandas
 pandera
 matplotlib
-sect
+sect==0.4.1
 vtk
 pyvista
-tetgen
+tetgen==0.5.2
