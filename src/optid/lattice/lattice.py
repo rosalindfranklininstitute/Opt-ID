@@ -109,7 +109,7 @@ class Lattice:
 
     @property
     @beartype
-    def jnp_unit_lattice(self) -> jnp.ndarray:
+    def jnp_unit_lattice(self) -> typ.Any:
         """
         Lattice tensor with the desired shape centred at origin spanning -0.5 to +0.5
         """
@@ -125,7 +125,7 @@ class Lattice:
 
     @property
     @beartype
-    def jnp_world_lattice(self) -> jnp.ndarray:
+    def jnp_world_lattice(self) -> typ.Any:
         """
         Lattice tensor with the desired shape in world coordinates.
         """

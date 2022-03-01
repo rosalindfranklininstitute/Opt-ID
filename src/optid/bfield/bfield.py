@@ -16,6 +16,7 @@
 # External Imports
 from beartype import beartype
 import jax.numpy as jnp
+import typing as typ
 
 # Opt-ID Imports
 from optid.lattice import Lattice
@@ -26,7 +27,7 @@ class Bfield:
     @beartype
     def __init__(self,
                  lattice: Lattice,
-                 field: jnp.ndarray):
+                 field: typ.Any):
 
         self._lattice = lattice
 
@@ -51,5 +52,5 @@ class Bfield:
 
     @property
     @beartype
-    def field(self) -> jnp.ndarray:
+    def field(self) -> typ.Any:
         return self._field

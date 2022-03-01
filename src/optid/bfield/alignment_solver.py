@@ -34,7 +34,7 @@ from ..lattice import Lattice
 @beartype
 def argmin_alignment_solver(
         bfield: Bfield,
-        observation: jnp.ndarray,
+        observation: typ.Any,
         loss_fn: typ.Callable,
         matrices: typ.Iterable[np.ndarray]) -> typ.Tuple[numbers.Real, Lattice]:
 
@@ -89,7 +89,7 @@ def jnp_parameterized_matrix(sx, sz, ss, rx, rz, rs, tx, tz, ts):
 @beartype
 def gridsearch_alignment_solver(
         bfield: Bfield,
-        observation: jnp.ndarray,
+        observation: typ.Any,
         loss_fn: typ.Callable,
         params: typ.Dict[str, typ.Sequence[numbers.Real]]) -> typ.Tuple[numbers.Real, Lattice]:
 
@@ -102,7 +102,7 @@ def gridsearch_alignment_solver(
 @beartype
 def sgd_alignment_solver(
         bfield: Bfield,
-        observation: jnp.ndarray,
+        observation: typ.Any,
         loss_fn: typ.Callable,
         params: typ.Dict[str, numbers.Real],
         mask: typ.Dict[str, numbers.Real],

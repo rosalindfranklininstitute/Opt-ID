@@ -198,7 +198,7 @@ class Geometry:
 
     @property
     @beartype
-    def vertices(self) -> jnp.ndarray:
+    def vertices(self) -> typ.Any:
         """
         Tensor of vertices in 3-space.
         """

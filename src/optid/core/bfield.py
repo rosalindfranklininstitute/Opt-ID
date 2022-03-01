@@ -59,7 +59,7 @@ def radia_evaluate_bfield_on_lattice(
 def jnp_radia_evaluate_bfield_on_lattice(
         radia_object: int,
         lattice: np.ndarray,
-        device: typ.Optional[typ.Any] = None) -> jnp.ndarray:
+        device: typ.Optional[typ.Any] = None) -> typ.Any:
     """
     Wraps rad.Fld to take numpy tensors as inputs and return JAX tensors as outputs.
 
