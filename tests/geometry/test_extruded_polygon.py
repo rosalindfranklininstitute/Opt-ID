@@ -45,16 +45,16 @@ class ExtrudedPolygonTest(unittest.TestCase):
             [-0.5, -0.5, -0.5], [-0.5,  0.5, -0.5], [0.5,  0.5, -0.5], [0.5, -0.5, -0.5],
             [-0.5, -0.5,  0.5], [-0.5,  0.5,  0.5], [0.5,  0.5,  0.5], [0.5, -0.5,  0.5]], dtype=np.float32)
 
-        # polyhedra = [
-        #     [[0, 1, 6], [1, 6, 2], [6, 2, 0], [2, 0, 1]],
-        #     [[7, 0, 6], [0, 6, 2], [6, 2, 7], [2, 7, 0]],
-        #     [[0, 1, 5], [1, 5, 6], [5, 6, 0], [6, 0, 1]],
-        #     [[0, 5, 4], [5, 4, 6], [4, 6, 0], [6, 0, 5]],
-        #     [[7, 0, 4], [0, 4, 6], [4, 6, 7], [6, 7, 0]],
-        #     [[7, 0, 2], [0, 2, 3], [2, 3, 7], [3, 7, 0]]]
+        polyhedra = [
+            [[0, 1, 6], [1, 6, 2], [6, 2, 0], [2, 0, 1]],
+            [[7, 0, 6], [0, 6, 2], [6, 2, 7], [2, 7, 0]],
+            [[0, 1, 5], [1, 5, 6], [5, 6, 0], [6, 0, 1]],
+            [[0, 5, 4], [5, 4, 6], [4, 6, 0], [6, 0, 5]],
+            [[7, 0, 4], [0, 4, 6], [4, 6, 7], [6, 7, 0]],
+            [[7, 0, 2], [0, 2, 3], [2, 3, 7], [3, 7, 0]]]
 
         self.assertTrue(np.allclose(geometry.vertices, vertices, atol=1e-5))
-        # self.assertEqual(geometry.polyhedra, polyhedra)
+        self.assertEqual(geometry.polyhedra, polyhedra)
 
     def test_constructor_polygon_list(self):
 
@@ -67,16 +67,16 @@ class ExtrudedPolygonTest(unittest.TestCase):
             [-0.5, -0.5, -0.5], [-0.5,  0.5, -0.5], [0.5,  0.5, -0.5], [0.5, -0.5, -0.5],
             [-0.5, -0.5,  0.5], [-0.5,  0.5,  0.5], [0.5,  0.5,  0.5], [0.5, -0.5,  0.5]], dtype=np.float32)
 
-        # polyhedra = [
-        #     [[0, 1, 6], [1, 6, 2], [6, 2, 0], [2, 0, 1]],
-        #     [[7, 0, 6], [0, 6, 2], [6, 2, 7], [2, 7, 0]],
-        #     [[0, 1, 5], [1, 5, 6], [5, 6, 0], [6, 0, 1]],
-        #     [[0, 5, 4], [5, 4, 6], [4, 6, 0], [6, 0, 5]],
-        #     [[7, 0, 4], [0, 4, 6], [4, 6, 7], [6, 7, 0]],
-        #     [[7, 0, 2], [0, 2, 3], [2, 3, 7], [3, 7, 0]]]
+        polyhedra = [
+            [[0, 1, 6], [1, 6, 2], [6, 2, 0], [2, 0, 1]],
+            [[7, 0, 6], [0, 6, 2], [6, 2, 7], [2, 7, 0]],
+            [[0, 1, 5], [1, 5, 6], [5, 6, 0], [6, 0, 1]],
+            [[0, 5, 4], [5, 4, 6], [4, 6, 0], [6, 0, 5]],
+            [[7, 0, 4], [0, 4, 6], [4, 6, 7], [6, 7, 0]],
+            [[7, 0, 2], [0, 2, 3], [2, 3, 7], [3, 7, 0]]]
 
         self.assertTrue(np.allclose(geometry.vertices, vertices, atol=1e-5))
-        # self.assertEqual(geometry.polyhedra, polyhedra)
+        self.assertEqual(geometry.polyhedra, polyhedra)
 
     @unittest.skipIf(sys.flags.optimize > 0, 'BearType optimized away.')
     def test_constructor_bad_polygon_type_raises_exception(self):
