@@ -37,10 +37,7 @@ on:
 env:
   JINJA_CMD: |
     import os, sys, jinja2
-    github_releases = list(map((lambda tag: tag[len('refs/tags/'):]),
-                           filter((lambda tag: tag.startswith('refs/tags/v')),
-                           os.environ['GITHUB_TAGS'].strip('"').strip().split())))
-    sys.stdout.write(jinja2.Template(sys.stdin.read()).render(env=os.environ, github_releases=github_releases))
+    sys.stdout.write(jinja2.Template(sys.stdin.read()).render(env=os.environ))
 
 jobs:
   update-readme:
@@ -57,10 +54,6 @@ jobs:
       - name: Add ENV variable for current branch
         run: |
           echo "GITHUB_BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
-
-      - name: Add ENV variable for remote release tags
-        run: |
-          echo "GITHUB_TAGS=\"`git ls-remote --tags origin`\"" >> $GITHUB_ENV
 
       - name: Debug ENV
         run: |
