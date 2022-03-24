@@ -1,9 +1,5 @@
 ![GitHub](https://img.shields.io/github/license/{{ env['GITHUB_REPOSITORY'] }}?kill_cache=1) [![GitHub Workflow Status (branch)](https://github.com/{{ env['GITHUB_REPOSITORY'] }}/actions/workflows/ci.yml/badge.svg?branch={{ env['GITHUB_BRANCH'] }})](https://github.com/{{ env['GITHUB_REPOSITORY'] }}/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/{{ env['GITHUB_REPOSITORY'] }}/branch/{{ env['GITHUB_BRANCH'] }}/graph/badge.svg?token=pZp3wgitjN)](https://codecov.io/gh/{{ env['GITHUB_REPOSITORY'] }})
 
-# Deprecated!
-
-Version 2.0.x of Opt-ID will be deprecated and is under long term support development.
-
 # Docker and Singularity Containers
 
 ```
