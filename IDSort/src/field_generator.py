@@ -209,12 +209,38 @@ def calculate_cached_bfield_loss(info, lookup, magnets, maglist, ref_bfield):
     bfield = generate_bfield(info, maglist, magnets, lookup)
     return calculate_bfield_loss(bfield, ref_bfield)
 
+
 def calculate_trajectory_loss(trajectories, ref_trajectories):
     # Compute MSE between two tensors representing the integrals of motion through a bfield w.r.t a sampling lattice
     # Slice 0:2 represent the X and Z components of the first integral of motion
     # Slice 2:4 represent the X and Z components of the second integral of motion
-    # TODO refactor to be np.mean when we fix the bugs in calculate_bfield_phase_error(...)
-    return np.sum(np.square(trajectories[...,2:4] - ref_trajectories[...,2:4]))
+
+    def lobf(s, x, z):
+        s_flat = s.flatten()
+        x_flat = x.flatten()
+        z_flat = z.flatten()
+
+        x_fit = np.reshape(np.poly1d(np.polyfit(s_flat, x_flat, 1))(s_flat), x.shape)
+        z_fit = np.reshape(np.poly1d(np.polyfit(s_flat, z_flat, 1))(s_flat), z.shape)
+
+        return x_fit, z_fit
+
+    def trajectory_lobf(trajectories):
+
+        x1_traj = trajectories[..., 0]
+        z1_traj = trajectories[..., 1]
+
+        x1_fit, z1_fit = lobf(np.linspace(-1, 1, len(x1_traj)), x1_traj, z1_traj)
+
+        return np.stack([x1_fit, z1_fit], axis=-1)
+
+    i = ((trajectories.shape[0] + 1) // 2) - 1
+    j = ((trajectories.shape[1] + 1) // 2) - 1
+
+    ref_traj_norm = ref_trajectories[i, j, :, :2] - trajectory_lobf(ref_trajectories[i, j, :, :2])
+    traj_norm = trajectories[i, j, :, :2] - trajectory_lobf(trajectories[i, j, :, :2])
+
+    return np.sum(np.square(traj_norm - ref_traj_norm))
 
 def calculate_cached_trajectory_loss(info, lookup, magnets, maglist, ref_trajectories):
     # Calculate bfield loss and also return reference array to reuse later
@@ -224,9 +250,37 @@ def calculate_cached_trajectory_loss(info, lookup, magnets, maglist, ref_traject
     return bfield, trajectory_loss
 
 def calculate_trajectory_loss_from_array(info, bfield, ref_trajectories):
-    phase_error, trajectories = calculate_bfield_phase_error(info, bfield)
+    trajectories = calculate_trajectories(info, bfield)
     return calculate_trajectory_loss(trajectories, ref_trajectories)
 
+def calculate_trajectories(info, bfield, energy=3.0):
+    # Diamond synchrotron 3 GeV storage ring
+    const = (0.03 / energy) * 1e-2 # Unknown constant... evaluates to 1e-4 for 3 GeV storage ring
+
+    s_step_size = info['sstep']
+
+    # bfield.shape == (eval_x, eval_z, eval_s, 3) where 3 refers to slices for the X, Z, and S field strength measurements
+    # We only care about integrals of motion in X and Z so discard S measurements below
+
+    # Trapezium rule applied to bfield measurements in X and Z helps compute the second integral of motion
+    trap_bfield = np.roll(bfield[...,:2], shift=1, axis=2)
+    trap_bfield[...,0,:] = 0 # Set first samples on S axis to 0
+    trap_bfield = (trap_bfield + bfield[...,:2]) * (s_step_size / 2)
+
+    # Accumulate the second integral of motion w.r.t the X and Z axes, along the orbital S axis
+    traj_2nd_integral = np.cumsum((trap_bfield * const), axis=2)
+
+    # Trapezium rule applied to second integral of motion helps compute the first integral of motion
+    trap_traj_2nd_integral = np.roll(traj_2nd_integral, shift=1, axis=2)
+    trap_traj_2nd_integral[:,:,0,:] = 0 # Set first samples on S axis to 0
+    trap_traj_2nd_integral = (trap_traj_2nd_integral + traj_2nd_integral) * (s_step_size / 2)
+
+    # Accumulate the first integral of motion w.r.t the X and Z axes, along the orbital S axis
+    traj_1st_integral = np.cumsum(trap_traj_2nd_integral, axis=2)
+
+    trajectories = np.concatenate([traj_1st_integral[...,::-1], traj_2nd_integral[...,::-1]], axis=-1) * np.array([-1, 1, -1, 1])
+
+    return trajectories
 
 def calculate_bfield_phase_error(info, bfield):
     # TODO move ring energy into device JSON file as devices are tied to specific facilities
@@ -248,8 +302,7 @@ def calculate_bfield_phase_error(info, bfield):
     # We only care about integrals of motion in X and Z so discard S measurements below
 
     # Trapezium rule applied to bfield measurements in X and Z helps compute the second integral of motion
-    # TODO roll is on X axis (0) between neighbouring eval points, is this correct? Should be S axis (2)?
-    trap_bfield = np.roll(bfield[...,:2], shift=1, axis=0)
+    trap_bfield = np.roll(bfield[...,:2], shift=1, axis=2)
     trap_bfield[...,0,:] = 0 # Set first samples on S axis to 0
     trap_bfield = (trap_bfield + bfield[...,:2]) * (s_step_size / 2)
 
@@ -257,9 +310,7 @@ def calculate_bfield_phase_error(info, bfield):
     traj_2nd_integral = np.cumsum((trap_bfield * const), axis=2)
 
     # Trapezium rule applied to second integral of motion helps compute the first integral of motion
-    # TODO why shift by 4 indices? One period? (no guarantees on how many world space units 4 indices corresponds to) Should this be 1?
-    # TODO roll is on X axis (0) between neighbouring eval points, is this correct? Should be S axis (2)?
-    trap_traj_2nd_integral = np.roll(traj_2nd_integral, shift=4, axis=0)
+    trap_traj_2nd_integral = np.roll(traj_2nd_integral, shift=1, axis=2)
     trap_traj_2nd_integral[:,:,0,:] = 0 # Set first samples on S axis to 0
     trap_traj_2nd_integral = (trap_traj_2nd_integral + traj_2nd_integral) * (s_step_size / 2)
 
@@ -267,10 +318,6 @@ def calculate_bfield_phase_error(info, bfield):
     traj_1st_integral = np.cumsum(trap_traj_2nd_integral, axis=2)
 
     # Trajectory first and second integrals of motion have been computed, now we compute the phase error of those trajectories
-    # TODO why do we swap X,Z for Z,X order for the field measurements?
-    #      Consistent Z,X ordering across all expected files for tests but no actual reason other than that they were all computed with this.
-    #      Removal of swap forces careful conversion of expected data files.
-    #      Same goes for removing Z integral negation.
     trajectories = np.concatenate([traj_1st_integral[...,::-1], traj_2nd_integral[...,::-1]], axis=-1) * np.array([-1, 1, -1, 1])
 
     # Extract the second integral of motion for the central trajectory going down the centre of the eval point grid
@@ -321,7 +368,6 @@ def calculate_trajectory_straightness(info, trajectories):
     strx   = np.max(dxmean)
     strz   = np.max(zabs)
     return strx, strz
-
 
 def write_bfields(filename, id_filename, lookup_filename, magnets_filename, maglist):
 
