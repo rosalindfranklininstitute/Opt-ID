@@ -170,7 +170,7 @@ The file names contain the fitness of the genome in scientific notation which ca
     ├── 7.25442782e-03_000_bceba003514f.genome
     ├── 7.44059451e-04_000_5a67562fa0c7.genome
     └── 8.80150018e-04_000_59c569922c26.genome
-```|
+```
 
 Now lets process that best genome into a .h5 file so we can visualize it in DAWN:
 
