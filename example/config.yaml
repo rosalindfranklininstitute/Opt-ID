@@ -1,0 +1,41 @@
+id_setup:
+  type: 'Hybrid_Symmetric'
+  name: 'CPMU_I04'
+  periods: 113
+  fullmagdims: [50.0, 30.0, 5.18]
+  hemagdims: [50.0, 30.0, 3.75]
+  htmagdims: [50.0, 30.0, 1.06]
+  poledims: [30.0, 22.0, 2.955]
+  x: [-10.0, 10.1, 2.5]
+  z: [-1, 1.1, 1]
+  steps: 5
+  interstice: 0.35
+  gap: 5.4
+  endgapsym: 3.0
+  terminalgapsymhyb: 3.0
+  # Relative to the pwd being /dls/tmp/blah this would be /dls/tmp/blah/CPMU_I04.json
+  output_filename: 'CPMU_I04.json'
+
+magnets:
+  # Relative to the pwd being /dls/tmp/blah this would be /dls/tmp/blah/CPMU_I04/HH.sim
+  hmags: 'CPMU_I04/HH.sim'
+  hemags: 'CPMU_I04/HEA.sim'
+  htmags: 'CPMU_I04/HTD.sim'
+  vmags: null
+  vemags: null
+  # Relative to the pwd being /dls/tmp/blah this would be /dls/tmp/blah/CPMU_I04.mag
+  output_filename: 'CPMU_I04.mag'
+
+lookup_generator:
+  random: False
+  # Relative to the pwd being /dls/tmp/blah this would be /dls/tmp/blah/CPMU_I04.h5
+  output_filename: 'CPMU_I04.h5'
+
+mpi_runner:
+  iterations: 10
+  setup: 24
+  c: 1
+  e: 0.0
+  max_age: 10
+  scale: 10.0
+  verbose: 5

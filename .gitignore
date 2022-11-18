@@ -100,3 +100,4 @@ ENV/
 IDSort/src/mpijob.sh
 IDSort/src/mpi4shimOpt.sh
 /.idea/other.xml
+/tmp/

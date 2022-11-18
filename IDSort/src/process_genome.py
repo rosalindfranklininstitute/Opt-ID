@@ -203,7 +203,9 @@ def process(options, args):
                 raise ex
 
             # Offload analysis processing to field_generator::output_fields
+
             analysis_path = os.path.join(options.output_dir, os.path.split(genome_path)[1] + '.h5')
+            logger.info('Output path [%s]', analysis_path)
             write_bfields(analysis_path, options.id_filename, options.id_template, options.magnets_filename, maglists)
 
     logger.debug('Halting')
