@@ -13,8 +13,12 @@ from definitions import ROOT_DIR
 from IDSort.src import id_setup, magnets, lookup_generator, mpi_runner, \
         mpi_runner_for_shim_opt, process_genome, compare
 
+from .logging_utils import logging, getLogger, setLoggerLevel
+logger = getLogger(__name__)
 
 def run_shim_job(config, shimmed_genome_dirpath, processed_data_dir, data_dir, use_cluster):
+    logger.info('Running shim optimization...')
+
     # assuming that the shim job is starting with an inp file, it needs to
     # first be converted to a genome file before the mpi runner generates the
     # shimmed genomes
@@ -41,18 +45,22 @@ def run_shim_job(config, shimmed_genome_dirpath, processed_data_dir, data_dir, u
     run_mpi_runner_for_shim_opt(config['mpi_runner_for_shim_opt'], [shimmed_genome_dirpath], data_dir, use_cluster)
 
 def run_id_setup(options, args):
+    logger.info('Running .json ID spec generation...')
     options_named = namedtuple("options", options.keys())(*options.values())
     id_setup.process(options_named, args)
 
 def run_magnets(options, args):
+    logger.info('Running .mag file generation...')
     options_named = namedtuple("options", options.keys())(*options.values())
     magnets.process(options_named, args)
 
 def run_lookup_generator(options, args):
+    logger.info('Running .h5 lookup generation...')
     options_named = namedtuple("options", options.keys())(*options.values())
     lookup_generator.process(options_named, args)
 
 def run_mpi_runner(options, args, data_dir, use_cluster):
+    logger.info('Running sort optimization...')
     options_named = namedtuple("options", options.keys())(*options.values())
 
     if not use_cluster:
@@ -98,6 +106,7 @@ def run_mpi_runner(options, args, data_dir, use_cluster):
         subprocess.call(qsub_args + mpijob_args)
 
 def run_mpi_runner_for_shim_opt(options, args, data_dir, use_cluster):
+    logger.info('Running shim optimization...')
     options_named = namedtuple("options", options.keys())(*options.values())
 
     if not use_cluster:
@@ -150,6 +159,7 @@ def run_mpi_runner_for_shim_opt(options, args, data_dir, use_cluster):
         subprocess.call(qsub_args + mpijob_args)
 
 def run_process_genome(options, input_file, output_dir):
+    logger.info('Running process genomes...')
 
     options['output_dir'] = output_dir
     options_named = namedtuple("options", options.keys())(*options.values())
@@ -158,6 +168,7 @@ def run_process_genome(options, input_file, output_dir):
     process_genome.process(options_named, args)
 
 def run_compare(original_genome_path, shimmed_genome_path, diff_filename, data_dir):
+    logger.info('Running compare genomes...')
 
     diff_dirpath = os.path.join(data_dir, 'shim_diffs')
     os.makedirs(diff_dirpath, exist_ok=True)
@@ -178,6 +189,8 @@ def run_compare(original_genome_path, shimmed_genome_path, diff_filename, data_d
     compare.process(options_named, args)
 
 def generate_restart_sort_script(config, config_path, data_dir, use_cluster):
+    logger.info('Running "restart sort script" generation...')
+
     file_loader = FileSystemLoader(os.path.dirname(__file__))
     env = Environment(loader=file_loader)
     template = env.get_template('restart_sort_template.sh')
@@ -214,6 +227,8 @@ def generate_restart_sort_script(config, config_path, data_dir, use_cluster):
     os.chmod(script_path, 0o775)
 
 def generate_report_script(config_path, data_dir):
+    logger.info('Running "report script" generation...')
+
     file_loader = FileSystemLoader(os.path.dirname(__file__))
     env = Environment(loader=file_loader)
     shell_script_template = env.get_template('generate_report_template.sh')
@@ -239,6 +254,7 @@ def generate_report_script(config_path, data_dir):
     os.chmod(shell_script_path, 0o775)
 
 def generate_report_notebook(config, job_type, data_dir, processed_data_dir, genome_dirpath, filenames, report_filename):
+    logger.info('Running "report notebook" generation...')
     file_loader = FileSystemLoader(os.path.dirname(__file__))
     env = Environment(loader=file_loader)
     report_template = env.get_template('genome_report_template.ipynb')
@@ -328,6 +344,7 @@ def generate_report_notebook(config, job_type, data_dir, processed_data_dir, gen
         report.write(pdf_data)
 
 def generate_compare_shim_script(config_path, data_dir):
+    logger.info('Running "compare script" generation...')
     file_loader = FileSystemLoader(os.path.dirname(__file__))
     env = Environment(loader=file_loader)
     shell_script_template = env.get_template('compare_shim_template.sh')
@@ -349,6 +366,7 @@ def generate_compare_shim_script(config_path, data_dir):
     os.chmod(shell_script_path, 0o775)
 
 def set_job_parameters(job_type, options, config):
+    logger.info('Set job parameters...')
 
     if job_type == 'sort':
         runner = 'mpi_runner'
@@ -366,6 +384,7 @@ def set_job_parameters(job_type, options, config):
         config[runner]['seed_value'] = options.seed_value
 
 def generate_mpi_script(job_type, data_dir):
+    logger.info('Running "job script" generation...')
 
     file_loader = FileSystemLoader(os.path.dirname(__file__))
     env = Environment(loader=file_loader)
@@ -398,6 +417,7 @@ if __name__ == "__main__":
     from optparse import OptionParser
     usage = "%prog [options] ConfigFile OutputDataDir"
     parser = OptionParser(usage=usage)
+    parser.add_option("--force-generate", dest="force_generate", help="Force the generation of ID .json, .mag, and .h5 files even if they exist.", action="store_true", default=False)
     parser.add_option("--sort", dest="sort", help="Run a sort job", action="store_true", default=False)
     parser.add_option("--restart-sort", dest="restart_sort", help="Run a sort job with an initial population of genomes", action="store_true", default=False)
     parser.add_option("--shim", dest="shim", help="Run a shim job", action="store_true", default=False)
@@ -412,7 +432,11 @@ if __name__ == "__main__":
     parser.add_option("--cluster-off", dest="use_cluster", help="Run job on a local machine", action="store_false")
     parser.add_option("--seed", dest="seed", help="Seed the random number generator", action="store_true", default=False)
     parser.add_option("--seed-value", dest="seed_value", help="Seed value for the random number generator", default=1, type="int")
+    parser.add_option('-v', '--verbose', dest='verbose', help='Set the verbosity level [0-4]', default=0, type='int')
     (options, args) = parser.parse_args()
+
+    if hasattr(options, 'verbose'):
+        setLoggerLevel(logger, options.verbose)
 
     if options.sort and options.shim:
         raise ValueError('A sort and shim job cannot be done simultaneously, please choose only one')
@@ -420,6 +444,7 @@ if __name__ == "__main__":
     config_path = args[0]
     data_dir    = args[1] if len(args) > 1 else '.'
 
+    logger.info(f'Loading config file from [{config_path}]')
     yaml = YAML(typ='safe')
     with open(config_path, 'r') as config_file:
         config = yaml.load(config_file)
@@ -439,9 +464,22 @@ if __name__ == "__main__":
     config['lookup_generator']['periods'] = config['id_setup']['periods']
 
     if not options.restart_sort and not options.generate_report and not options.compare_shim:
-        run_id_setup(config['id_setup'], [json_filepath])
-        run_magnets(config['magnets'], [mag_filepath])
-        run_lookup_generator(config['lookup_generator'], [json_filepath, h5_filepath])
+        logger.info(f'Running lookup generation...')
+
+        if options.force_generate or not os.path.exists(json_filepath):
+            run_id_setup(config['id_setup'], [json_filepath])
+        else:
+            logger.info(f'Using cached .json')
+
+        if options.force_generate or not os.path.exists(mag_filepath):
+            run_magnets(config['magnets'], [mag_filepath])
+        else:
+            logger.info(f'Using cached .mag')
+
+        if options.force_generate or not os.path.exists(h5_filepath):
+            run_lookup_generator(config['lookup_generator'], [json_filepath, h5_filepath])
+        else:
+            logger.info(f'Using cached .h5')
 
     # both a sort and shim's use of process_genome.py need the json, mag, h5
     # filepaths
@@ -453,6 +491,7 @@ if __name__ == "__main__":
     config['process_genome']['id_template'] = h5_filepath
 
     if options.sort or options.restart_sort:
+        logger.info(f'Running sort optimization...')
 
         genome_dirpath = os.path.join(data_dir, 'genomes')
         os.makedirs(genome_dirpath, exist_ok=True)
@@ -473,6 +512,8 @@ if __name__ == "__main__":
         generate_report_script(config_path, data_dir)
 
     elif options.shim:
+        logger.info(f'Running shim optimization...')
+
         shimmed_genome_dirpath = os.path.join(data_dir, 'shimmed_genomes')
         os.makedirs(shimmed_genome_dirpath, exist_ok=True)
 
@@ -490,6 +531,7 @@ if __name__ == "__main__":
         generate_compare_shim_script(config_path, data_dir)
 
     elif options.generate_report:
+        logger.info(f'Running generate report...')
 
         job_type = None
         if 'mpi_runner' in config:
@@ -504,6 +546,7 @@ if __name__ == "__main__":
         generate_report_notebook(config, job_type, data_dir, processed_data_dir, genome_dirpath, genome_filenames, options.report_filename)
 
     elif options.compare_shim:
+        logger.info(f'Running compare shim genomes...')
 
         original_inp = os.path.split(config['process_genome']['readable_genome_file'])[1]
         original_genome = original_inp + '.genome'
