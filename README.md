@@ -1,4 +1,4 @@
-![GitHub](https://img.shields.io/github/license/rosalindfranklininstitute/Opt-ID?kill_cache=1) [![GitHub Workflow Status (branch)](https://github.com/rosalindfranklininstitute/Opt-ID/actions/workflows/ci.yml/badge.svg?branch=v2-path-refactor)](https://github.com/rosalindfranklininstitute/Opt-ID/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/rosalindfranklininstitute/Opt-ID/branch/v2-path-refactor/graph/badge.svg?token=pZp3wgitjN)](https://codecov.io/gh/rosalindfranklininstitute/Opt-ID)
+![GitHub](https://img.shields.io/github/license/rosalindfranklininstitute/Opt-ID?kill_cache=1) [![GitHub Workflow Status (branch)](https://github.com/rosalindfranklininstitute/Opt-ID/actions/workflows/ci.yml/badge.svg?branch=v2)](https://github.com/rosalindfranklininstitute/Opt-ID/actions/workflows/ci.yml) [![codecov](https://codecov.io/gh/rosalindfranklininstitute/Opt-ID/branch/v2/graph/badge.svg?token=pZp3wgitjN)](https://codecov.io/gh/rosalindfranklininstitute/Opt-ID)
 
 # Docker Containers
 
