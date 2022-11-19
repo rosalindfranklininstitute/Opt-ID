@@ -16,7 +16,7 @@ from IDSort.src import id_setup, magnets, lookup_generator, mpi_runner, \
 from .logging_utils import logging, getLogger, setLoggerLevel
 logger = getLogger(__name__)
 
-def run_shim_job(config, shimmed_genome_dirpath, processed_data_dir, data_dir, use_cluster):
+def run_shim_job(config, shimmed_genome_dirpath, processed_data_dir):
     logger.info('Running shim optimization...')
 
     # assuming that the shim job is starting with an inp file, it needs to
@@ -42,7 +42,7 @@ def run_shim_job(config, shimmed_genome_dirpath, processed_data_dir, data_dir, u
     os.rename(genome_filepath, renamed_genome_filepath)
     config['mpi_runner_for_shim_opt']['genome_filename'] = renamed_genome_filepath
 
-    run_mpi_runner_for_shim_opt(config['mpi_runner_for_shim_opt'], [shimmed_genome_dirpath], data_dir, use_cluster)
+    run_mpi_runner_for_shim_opt(config['mpi_runner_for_shim_opt'], [shimmed_genome_dirpath])
 
 def run_id_setup(options, args):
     logger.info('Running .json ID spec generation...')
@@ -59,104 +59,17 @@ def run_lookup_generator(options, args):
     options_named = namedtuple("options", options.keys())(*options.values())
     lookup_generator.process(options_named, args)
 
-def run_mpi_runner(options, args, data_dir, use_cluster):
+def run_mpi_runner(options, args):
     logger.info('Running sort optimization...')
     options_named = namedtuple("options", options.keys())(*options.values())
 
-    if not use_cluster:
-        mpi_runner.process(options_named, args)
+    mpi_runner.process(options_named, args)
 
-    else:
-        logfile_dirpath = os.path.join(data_dir, 'logfiles')
-
-        qsub_args = [
-            'qsub',
-            '-sync',
-            'y',
-            '-pe',
-            'openmpi',
-            str(options_named.number_of_threads),
-            '-q',
-            options_named.queue,
-            '-l',
-            'release=' + options_named.node_os,
-            '-j',
-            'y',
-            '-o',
-            os.path.join(logfile_dirpath, '$JOB_ID.log')
-        ] + [os.path.join(data_dir, 'mpijob.sh')]
-
-        mpijob_restart_sublist = ['--restart'] if options_named.restart else []
-        mpijob_args = mpijob_restart_sublist + [
-            '--iterations',
-            str(options_named.iterations),
-            '-l',
-            options_named.lookup_filename,
-            '-i',
-            options_named.id_filename,
-            '-m',
-            options_named.magnets_filename,
-            '-s',
-            str(options_named.setup),
-            '--param_c',
-            str(options_named.c),
-            args[0]
-        ]
-
-        subprocess.call(qsub_args + mpijob_args)
-
-def run_mpi_runner_for_shim_opt(options, args, data_dir, use_cluster):
+def run_mpi_runner_for_shim_opt(options, args):
     logger.info('Running shim optimization...')
     options_named = namedtuple("options", options.keys())(*options.values())
 
-    if not use_cluster:
-        mpi_runner_for_shim_opt.process(options_named, args)
-
-    else:
-        logfile_dirpath = os.path.join(data_dir, 'logfiles')
-
-        qsub_args = [
-            'qsub',
-            '-sync',
-            'y',
-            '-pe',
-            'openmpi',
-            str(options_named.number_of_threads),
-            '-q',
-            options_named.queue,
-            '-l',
-            'release=' + options_named.node_os,
-            '-j',
-            'y',
-            '-o',
-            os.path.join(logfile_dirpath, '$JOB_ID.log')
-        ] + [os.path.join(data_dir, 'mpi4shimOpt.sh')]
-
-        mpijob_args = [
-            '--iterations',
-            str(options_named.iterations),
-            '-m',
-            str(options_named.number_of_mutations),
-            '-c',
-            str(options_named.number_of_changes),
-            '-l',
-            options_named.lookup_filename,
-            '-i',
-            options_named.id_filename,
-            '--magnets',
-            options_named.magnets_filename,
-            '-g',
-            options_named.genome_filename,
-            '-b',
-            options_named.bfield_filename,
-            '-s',
-            str(options_named.setup),
-            '--param_c',
-            str(options_named.c),
-            args[0]
-        ]
-
-        subprocess.call(qsub_args + mpijob_args)
+    mpi_runner_for_shim_opt.process(options_named, args)
 
 def run_process_genome(options, input_file, output_dir):
     logger.info('Running process genomes...')
@@ -188,70 +101,70 @@ def run_compare(original_genome_path, shimmed_genome_path, diff_filename, data_d
 
     compare.process(options_named, args)
 
-def generate_restart_sort_script(config, config_path, data_dir, use_cluster):
-    logger.info('Running "restart sort script" generation...')
+# def generate_restart_sort_script(config, config_path, data_dir, use_cluster):
+#     logger.info('Running "restart sort script" generation...')
+#
+#     file_loader = FileSystemLoader(os.path.dirname(__file__))
+#     env = Environment(loader=file_loader)
+#     template = env.get_template('restart_sort_template.sh')
+#
+#     python_env_module = 'python/3'
+#     if use_cluster:
+#         output = template.render(
+#             python_env_module=python_env_module,
+#             config_path=config_path,
+#             output_dir_path=data_dir,
+#             project_root_dir=ROOT_DIR,
+#             use_cluster=use_cluster,
+#             node_os=config['mpi_runner']['node_os'],
+#             number_of_threads=config['mpi_runner']['number_of_threads'],
+#             queue=config['mpi_runner']['queue']
+#         )
+#     else:
+#         output = template.render(
+#             python_env_module=python_env_module,
+#             config_path=config_path,
+#             output_dir_path=data_dir,
+#             project_root_dir=ROOT_DIR,
+#             use_cluster=use_cluster,
+#             seed=config['mpi_runner']['seed'],
+#             seed_value=config['mpi_runner']['seed_value']
+#         )
+#
+#     script_name = 'restart_sort.sh'
+#     script_path = os.path.join(data_dir, script_name)
+#
+#     with open(script_path, 'w') as script:
+#         script.write(output)
+#
+#     os.chmod(script_path, 0o775)
 
-    file_loader = FileSystemLoader(os.path.dirname(__file__))
-    env = Environment(loader=file_loader)
-    template = env.get_template('restart_sort_template.sh')
-
-    python_env_module = 'python/3'
-    if use_cluster:
-        output = template.render(
-            python_env_module=python_env_module,
-            config_path=config_path,
-            output_dir_path=data_dir,
-            project_root_dir=ROOT_DIR,
-            use_cluster=use_cluster,
-            node_os=config['mpi_runner']['node_os'],
-            number_of_threads=config['mpi_runner']['number_of_threads'],
-            queue=config['mpi_runner']['queue']
-        )
-    else:
-        output = template.render(
-            python_env_module=python_env_module,
-            config_path=config_path,
-            output_dir_path=data_dir,
-            project_root_dir=ROOT_DIR,
-            use_cluster=use_cluster,
-            seed=config['mpi_runner']['seed'],
-            seed_value=config['mpi_runner']['seed_value']
-        )
-
-    script_name = 'restart_sort.sh'
-    script_path = os.path.join(data_dir, script_name)
-
-    with open(script_path, 'w') as script:
-        script.write(output)
-
-    os.chmod(script_path, 0o775)
-
-def generate_report_script(config_path, data_dir):
-    logger.info('Running "report script" generation...')
-
-    file_loader = FileSystemLoader(os.path.dirname(__file__))
-    env = Environment(loader=file_loader)
-    shell_script_template = env.get_template('generate_report_template.sh')
-
-    notebook_name = 'genome_report.ipynb'
-    notebook_path = os.path.join(data_dir, notebook_name)
-
-    python_env_module = 'python/3'
-    shell_script_output = shell_script_template.render(
-        python_env_module=python_env_module,
-        notebook_path=notebook_path,
-        yaml_config=config_path,
-        data_dir=data_dir,
-        project_root_dir=ROOT_DIR
-    )
-
-    shell_script_name = 'generate_report.sh'
-    shell_script_path = os.path.join(data_dir, shell_script_name)
-
-    with open(shell_script_path, 'w') as shell_script:
-        shell_script.write(shell_script_output)
-
-    os.chmod(shell_script_path, 0o775)
+# def generate_report_script(config_path, data_dir):
+#     logger.info('Running "report script" generation...')
+#
+#     file_loader = FileSystemLoader(os.path.dirname(__file__))
+#     env = Environment(loader=file_loader)
+#     shell_script_template = env.get_template('generate_report_template.sh')
+#
+#     notebook_name = 'genome_report.ipynb'
+#     notebook_path = os.path.join(data_dir, notebook_name)
+#
+#     python_env_module = 'python/3'
+#     shell_script_output = shell_script_template.render(
+#         python_env_module=python_env_module,
+#         notebook_path=notebook_path,
+#         yaml_config=config_path,
+#         data_dir=data_dir,
+#         project_root_dir=ROOT_DIR
+#     )
+#
+#     shell_script_name = 'generate_report.sh'
+#     shell_script_path = os.path.join(data_dir, shell_script_name)
+#
+#     with open(shell_script_path, 'w') as shell_script:
+#         shell_script.write(shell_script_output)
+#
+#     os.chmod(shell_script_path, 0o775)
 
 def generate_report_notebook(config, job_type, data_dir, processed_data_dir, genome_dirpath, filenames, report_filename):
     logger.info('Running "report notebook" generation...')
@@ -343,27 +256,27 @@ def generate_report_notebook(config, job_type, data_dir, processed_data_dir, gen
     with open(report_filepath, 'wb') as report:
         report.write(pdf_data)
 
-def generate_compare_shim_script(config_path, data_dir):
-    logger.info('Running "compare script" generation...')
-    file_loader = FileSystemLoader(os.path.dirname(__file__))
-    env = Environment(loader=file_loader)
-    shell_script_template = env.get_template('compare_shim_template.sh')
-
-    python_env_module = 'python/3'
-    shell_script_output = shell_script_template.render(
-        python_env_module=python_env_module,
-        yaml_config=config_path,
-        data_dir=data_dir,
-        project_root_dir=ROOT_DIR
-    )
-
-    shell_script_name = 'compare_shim.sh'
-    shell_script_path = os.path.join(data_dir, shell_script_name)
-
-    with open(shell_script_path, 'w') as shell_script:
-        shell_script.write(shell_script_output)
-
-    os.chmod(shell_script_path, 0o775)
+# def generate_compare_shim_script(config_path, data_dir):
+#     logger.info('Running "compare script" generation...')
+#     file_loader = FileSystemLoader(os.path.dirname(__file__))
+#     env = Environment(loader=file_loader)
+#     shell_script_template = env.get_template('compare_shim_template.sh')
+#
+#     python_env_module = 'python/3'
+#     shell_script_output = shell_script_template.render(
+#         python_env_module=python_env_module,
+#         yaml_config=config_path,
+#         data_dir=data_dir,
+#         project_root_dir=ROOT_DIR
+#     )
+#
+#     shell_script_name = 'compare_shim.sh'
+#     shell_script_path = os.path.join(data_dir, shell_script_name)
+#
+#     with open(shell_script_path, 'w') as shell_script:
+#         shell_script.write(shell_script_output)
+#
+#     os.chmod(shell_script_path, 0o775)
 
 def set_job_parameters(job_type, options, config):
     logger.info('Set job parameters...')
@@ -376,42 +289,44 @@ def set_job_parameters(job_type, options, config):
 
     if options.use_cluster:
         config[runner]['number_of_threads'] = options.number_of_threads
-        config[runner]['queue'] = options.queue
-        config[runner]['node_os'] = options.node_os
+        config[runner]['seed'] = options.seed
+        config[runner]['seed_value'] = options.seed_value
+        # config[runner]['queue'] = options.queue
+        # config[runner]['node_os'] = options.node_os
     else:
         config[runner]['singlethreaded'] = True
         config[runner]['seed'] = options.seed
         config[runner]['seed_value'] = options.seed_value
 
-def generate_mpi_script(job_type, data_dir):
-    logger.info('Running "job script" generation...')
-
-    file_loader = FileSystemLoader(os.path.dirname(__file__))
-    env = Environment(loader=file_loader)
-
-    if job_type == 'sort':
-        shell_script_template = env.get_template('mpijob_template.sh')
-
-    elif job_type == 'shim':
-        shell_script_template = env.get_template('mpi4shimOpt_template.sh')
-
-    shell_script_output = shell_script_template.render(
-        project_root_dir=ROOT_DIR
-    )
-
-    if job_type == 'sort':
-        shell_script_name = 'mpijob.sh'
-
-    elif job_type == 'shim':
-        shell_script_name = 'mpi4shimOpt.sh'
-
-    shell_script_path = os.path.join(data_dir, shell_script_name)
-    print(shell_script_path)
-
-    with open(shell_script_path, 'w') as shell_script:
-        shell_script.write(shell_script_output)
-
-    os.chmod(shell_script_path, 0o775)
+# def generate_mpi_script(job_type, data_dir):
+#     logger.info('Running "job script" generation...')
+#
+#     file_loader = FileSystemLoader(os.path.dirname(__file__))
+#     env = Environment(loader=file_loader)
+#
+#     if job_type == 'sort':
+#         shell_script_template = env.get_template('mpijob_template.sh')
+#
+#     elif job_type == 'shim':
+#         shell_script_template = env.get_template('mpi4shimOpt_template.sh')
+#
+#     shell_script_output = shell_script_template.render(
+#         project_root_dir=ROOT_DIR
+#     )
+#
+#     if job_type == 'sort':
+#         shell_script_name = 'mpijob.sh'
+#
+#     elif job_type == 'shim':
+#         shell_script_name = 'mpi4shimOpt.sh'
+#
+#     shell_script_path = os.path.join(data_dir, shell_script_name)
+#     print(shell_script_path)
+#
+#     with open(shell_script_path, 'w') as shell_script:
+#         shell_script.write(shell_script_output)
+#
+#     os.chmod(shell_script_path, 0o775)
 
 if __name__ == "__main__":
     from optparse import OptionParser
@@ -425,11 +340,10 @@ if __name__ == "__main__":
     parser.add_option("--diff-filename", dest="diff_filename", help="Specify the filename of the human readable magnet configuration diff", default="shim", type="string")
     parser.add_option("--generate-report", dest="generate_report", help="Generate a PDF with some data visualisation of desired genomes", action="store_true", default=False)
     parser.add_option("--report-filename", dest="report_filename", help="Specify the filename of the PDF report", default="genome_report.pdf", type="string")
-    parser.add_option("--cluster-on", dest="use_cluster", help="Run job on a cluster", action="store_true")
+    parser.add_option("--cluster-on", dest="use_cluster", help="Run job on a cluster", action="store_true", default=False)
     parser.add_option("--num-threads", dest="number_of_threads", help="Set the number of threads to use per node", default=10, type="int")
     parser.add_option("--queue", dest="queue", help="Set the desired queue for the cluster job to be added to", default="medium.q", type="string")
     parser.add_option("--node-os", dest="node_os", help="Set the OS of the desired nodes", default="rhel7", type="string")
-    parser.add_option("--cluster-off", dest="use_cluster", help="Run job on a local machine", action="store_false")
     parser.add_option("--seed", dest="seed", help="Seed the random number generator", action="store_true", default=False)
     parser.add_option("--seed-value", dest="seed_value", help="Seed value for the random number generator", default=1, type="int")
     parser.add_option('-v', '--verbose', dest='verbose', help='Set the verbosity level [0-4]', default=0, type='int')
@@ -496,9 +410,9 @@ if __name__ == "__main__":
         genome_dirpath = os.path.join(data_dir, 'genomes')
         os.makedirs(genome_dirpath, exist_ok=True)
 
-        mpijob_script_path = os.path.join(data_dir, 'mpijob.sh')
-        if not os.path.exists(mpijob_script_path):
-            generate_mpi_script('sort', data_dir)
+        # mpijob_script_path = os.path.join(data_dir, 'mpijob.sh')
+        # if not os.path.exists(mpijob_script_path):
+        #     generate_mpi_script('sort', data_dir)
 
         config['mpi_runner']['id_filename'] = json_filepath
         config['mpi_runner']['magnets_filename'] = mag_filepath
@@ -507,9 +421,9 @@ if __name__ == "__main__":
 
         config['mpi_runner']['restart'] = options.restart_sort
 
-        run_mpi_runner(config['mpi_runner'], [genome_dirpath], data_dir, options.use_cluster)
+        run_mpi_runner(config['mpi_runner'], [genome_dirpath])
         # generate_restart_sort_script(config, config_path, data_dir, options.use_cluster)
-        generate_report_script(config_path, data_dir)
+        # generate_report_script(config_path, data_dir)
 
     elif options.shim:
         logger.info(f'Running shim optimization...')
@@ -517,18 +431,18 @@ if __name__ == "__main__":
         shimmed_genome_dirpath = os.path.join(data_dir, 'shimmed_genomes')
         os.makedirs(shimmed_genome_dirpath, exist_ok=True)
 
-        mpijob_script_path = os.path.join(data_dir, 'mpi4shimOpt.sh')
-        if not os.path.exists(mpijob_script_path):
-            generate_mpi_script('shim', data_dir)
+        # mpijob_script_path = os.path.join(data_dir, 'mpi4shimOpt.sh')
+        # if not os.path.exists(mpijob_script_path):
+        #     generate_mpi_script('shim', data_dir)
 
         config['mpi_runner_for_shim_opt']['id_filename'] = json_filepath
         config['mpi_runner_for_shim_opt']['magnets_filename'] = mag_filepath
         config['mpi_runner_for_shim_opt']['lookup_filename'] = h5_filepath
         set_job_parameters('shim', options, config)
 
-        run_shim_job(config, shimmed_genome_dirpath, processed_data_dir, data_dir, options.use_cluster)
-        generate_report_script(config_path, data_dir)
-        generate_compare_shim_script(config_path, data_dir)
+        run_shim_job(config, shimmed_genome_dirpath, processed_data_dir, data_dir)
+        # generate_report_script(config_path, data_dir)
+        # generate_compare_shim_script(config_path, data_dir)
 
     elif options.generate_report:
         logger.info(f'Running generate report...')

@@ -89,10 +89,6 @@ def process(options, args):
 
     output_path = args[0]
 
-    if options.seed:
-        logger.info('Random seed set to %d', int(options.seed_value))
-        random.seed(int(options.seed_value))
-
     if options.singlethreaded:
         # Who am I within the set of compute nodes
         comm_rank, comm_size, comm_ip = (0, 1, 'localhost')
@@ -120,6 +116,10 @@ def process(options, args):
             return list(itertools.chain.from_iterable(MPI.COMM_WORLD.alltoall([local_population] * comm_size)))
 
     logger.info('Node %3d of %3d @ [%s]', comm_rank, comm_size, comm_ip)
+
+    if options.seed:
+        logger.info('Random seed set to %d', int(options.seed_value))
+        random.seed(int(options.seed_value + comm_rank))
 
     # Attempt to load the ID json data
     try:
@@ -369,8 +369,6 @@ if __name__ == "__main__":
     parser = optparse.OptionParser(usage=usage)
     parser.add_option('-v', '--verbose', dest='verbose', help='Set the verbosity level [0-4]', default=0, type='int')
     parser.add_option("-f", "--fitness", dest="fitness", help="Set the target fitness", default=0.0, type="float")
-    parser.add_option("-p", "--processing", dest="processing", help="Set the total number of processing units per file", default=5, type="int")
-    parser.add_option("-n", "--numnodes", dest="nodes", help="Set the total number of nodes to use", default=10, type="int")
     parser.add_option("-s", "--setup", dest="setup", help="set number of genomes to create in setup mode", default=5, type='int')
     parser.add_option("-i", "--info", dest="id_filename", help="Set the path to the id data", required=True, type="string")
     parser.add_option("-l", "--lookup", dest="lookup_filename", help="Set the path to the lookup table", required=True, type="string")

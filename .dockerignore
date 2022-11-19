@@ -4,4 +4,16 @@ analyse.sh
 sort.sh
 IDSort/data
 IDSort/example_configs
+IDSort/test
+.git
+.gitignore
+.gitmodules
+.dockerignore
+.idea
 .github
+**/.project
+**/.pydevproject
+**/__pycache__
+example
+README.*
+
