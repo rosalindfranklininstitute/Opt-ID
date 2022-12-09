@@ -288,6 +288,7 @@ def set_job_parameters(job_type, options, config):
         runner = 'mpi_runner_for_shim_opt'
 
     if options.use_cluster:
+        config[runner]['singlethreaded'] = False
         config[runner]['number_of_threads'] = options.number_of_threads
         config[runner]['seed'] = options.seed
         config[runner]['seed_value'] = options.seed_value
