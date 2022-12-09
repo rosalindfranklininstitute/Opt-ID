@@ -35,7 +35,7 @@ cp -vR $DATA_DIR $JOB_WORK_DIR
 
 # Install Opt-ID in the job directory
 export OPTID_PATH="$JOB_WORK_DIR/Opt-ID"
-git clone --depth 1 -b v2 https://github.com/rosalindfranklininstitute/Opt-ID.git $OPTID_PATH
+git clone --depth 1 -b v2-mpi https://github.com/rosalindfranklininstitute/Opt-ID.git $OPTID_PATH
 export PYTHONPATH="$OPTID_PATH:$PYTHONPATH"
 
 python3 -m venv --system-site-packages optidjobenv
