@@ -126,8 +126,11 @@ def process(options, args):
             shutil.copy(options.lookup_filename, worker_lookup)
 
         with h5py.File(worker_lookup, 'r') as fp:
+            logger.debug(list(fp.keys()))
             lookup = {}
             for beam in info['beams']:
+                logger.debug(beam['name'])
+                logger.debug(fp[beam['name']].shape)
                 lookup[beam['name']] = fp[beam['name']][...]
                 logger.debug('Loaded beam [%s] with shape [%s]', beam['name'], lookup[beam['name']].shape)
 
