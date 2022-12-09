@@ -363,7 +363,7 @@ if __name__ == "__main__":
     with open(config_path, 'r') as config_file:
         config = yaml.load(config_file)
 
-    processed_data_dir = os.path.join(data_dir, 'process_genome_output')
+    processed_data_dir = os.path.join(data_dir, 'processed_genomes')
 
     json_filename = config['id_setup'].pop('output_filename', None)
     json_filepath = os.path.join(data_dir, json_filename)
