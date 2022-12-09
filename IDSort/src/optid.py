@@ -364,7 +364,6 @@ if __name__ == "__main__":
         config = yaml.load(config_file)
 
     processed_data_dir = os.path.join(data_dir, 'process_genome_output')
-    os.makedirs(processed_data_dir, exist_ok=True)
 
     json_filename = config['id_setup'].pop('output_filename', None)
     json_filepath = os.path.join(data_dir, json_filename)
@@ -440,6 +439,7 @@ if __name__ == "__main__":
         config['mpi_runner_for_shim_opt']['lookup_filename'] = h5_filepath
         set_job_parameters('shim', options, config)
 
+        os.makedirs(processed_data_dir, exist_ok=True)
         run_shim_job(config, shimmed_genome_dirpath, processed_data_dir, data_dir)
         # generate_report_script(config_path, data_dir)
         # generate_compare_shim_script(config_path, data_dir)
@@ -457,6 +457,7 @@ if __name__ == "__main__":
         assert job_type is not None
 
         genome_filenames = args[2:]
+        os.makedirs(processed_data_dir, exist_ok=True)
         generate_report_notebook(config, job_type, data_dir, processed_data_dir, genome_dirpath, genome_filenames, options.report_filename)
 
     elif options.compare_shim:
@@ -464,6 +465,7 @@ if __name__ == "__main__":
 
         original_inp = os.path.split(config['process_genome']['readable_genome_file'])[1]
         original_genome = original_inp + '.genome'
+        os.makedirs(processed_data_dir, exist_ok=True)
         original_genome_path = os.path.join(processed_data_dir, original_genome)
 
         shimmed_genomes_dirpath = os.path.join(data_dir, 'shimmed_genomes')
