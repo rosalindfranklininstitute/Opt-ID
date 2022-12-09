@@ -36,6 +36,8 @@ import random
 import itertools
 
 import json
+import shutil
+
 import h5py
 
 import numpy as np
@@ -116,7 +118,14 @@ def process(options, args):
     # Attempt to load the ID's lookup table for the eval points defined in the JSON file
     try:
         logger.info('Loading ID lookup table [%s]', options.lookup_filename)
-        with h5py.File(options.lookup_filename, 'r', swmr=True) as fp:
+
+        if options.singlethreaded:
+            worker_lookup = options.lookup_filename
+        else:
+            worker_lookup = f'{options.lookup_filename}.worker-{comm_rank}'
+            shutil.copy(options.lookup_filename, worker_lookup)
+
+        with h5py.File(worker_lookup, 'r', swmr=True) as fp:
             lookup = {}
             for beam in info['beams']:
                 lookup[beam['name']] = fp[beam['name']][...]

@@ -19,6 +19,8 @@ import random
 import itertools
 
 import json
+import shutil
+
 import h5py
 
 import numpy as np
@@ -115,13 +117,16 @@ def process(options, args):
         def exchange_genomes(local_population):
             return list(itertools.chain.from_iterable(MPI.COMM_WORLD.alltoall([local_population] * comm_size)))
 
+    barrier()
     logger.info('Node %3d of %3d @ [%s]', comm_rank, comm_size, comm_ip)
 
+    barrier()
     if options.seed:
         logger.info('Random seed set to %d', int(options.seed_value))
         random.seed(int(options.seed_value + comm_rank))
 
     # Attempt to load the ID json data
+    barrier()
     try:
         logger.info('Loading ID info from json [%s]', options.id_filename)
         with open(options.id_filename, 'r') as fp:
@@ -132,9 +137,17 @@ def process(options, args):
         raise ex
 
     # Attempt to load the ID's lookup table for the eval points defined in the JSON file
+    barrier()
     try:
         logger.info('Loading ID lookup table [%s]', options.lookup_filename)
-        with h5py.File(options.lookup_filename, 'r', swmr=True) as fp:
+
+        if options.singlethreaded:
+            worker_lookup = options.lookup_filename
+        else:
+            worker_lookup = f'{options.lookup_filename}.worker-{comm_rank}'
+            shutil.copy(options.lookup_filename, worker_lookup)
+
+        with h5py.File(worker_lookup, 'r', swmr=True) as fp:
             lookup = {}
             for beam in info['beams']:
                 lookup[beam['name']] = fp[beam['name']][...]
