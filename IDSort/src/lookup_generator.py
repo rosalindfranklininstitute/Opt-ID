@@ -172,8 +172,7 @@ def process(options, args):
 
     try:
 
-        with h5py.File(output_path, 'w') as outfile:
-            outfile.swmr = True
+        with h5py.File(output_path, 'wb') as outfile:
 
             for b, beam in enumerate(data['beams']):
 

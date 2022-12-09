@@ -147,7 +147,7 @@ def process(options, args):
             worker_lookup = f'{options.lookup_filename}.worker-{comm_rank}'
             shutil.copy(options.lookup_filename, worker_lookup)
 
-        with h5py.File(worker_lookup, 'r', swmr=True) as fp:
+        with h5py.File(worker_lookup, 'rb') as fp:
             lookup = {}
             for beam in info['beams']:
                 lookup[beam['name']] = fp[beam['name']][...]
