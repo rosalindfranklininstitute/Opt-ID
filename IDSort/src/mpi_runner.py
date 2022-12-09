@@ -116,7 +116,7 @@ def process(options, args):
     # Attempt to load the ID's lookup table for the eval points defined in the JSON file
     try:
         logger.info('Loading ID lookup table [%s]', options.lookup_filename)
-        with h5py.File(options.lookup_filename, 'r') as fp:
+        with h5py.File(options.lookup_filename, 'r', swmr=True) as fp:
             lookup = {}
             for beam in info['beams']:
                 lookup[beam['name']] = fp[beam['name']][...]
