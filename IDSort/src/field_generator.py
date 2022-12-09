@@ -210,7 +210,7 @@ def calculate_cached_bfield_loss(info, lookup, magnets, maglist, ref_bfield):
     return calculate_bfield_loss(bfield, ref_bfield)
 
 
-def calculate_trajectory_loss(trajectories, ref_trajectories):
+def calculate_normalized_trajectory(trajectories, ref_trajectories):
     # Compute MSE between two tensors representing the integrals of motion through a bfield w.r.t a sampling lattice
     # Slice 0:2 represent the X and Z components of the first integral of motion
     # Slice 2:4 represent the X and Z components of the second integral of motion
@@ -240,6 +240,10 @@ def calculate_trajectory_loss(trajectories, ref_trajectories):
     ref_traj_norm = ref_trajectories[i, j, :, :2] - trajectory_lobf(ref_trajectories[i, j, :, :2])
     traj_norm = trajectories[i, j, :, :2] - trajectory_lobf(trajectories[i, j, :, :2])
 
+    return traj_norm, ref_traj_norm
+
+def calculate_trajectory_loss(trajectories, ref_trajectories):
+    traj_norm, ref_traj_norm = calculate_normalized_trajectory(trajectories, ref_trajectories)
     return np.sum(np.square(traj_norm - ref_traj_norm))
 
 def calculate_cached_trajectory_loss(info, lookup, magnets, maglist, ref_trajectories):
@@ -417,3 +421,10 @@ def write_bfields(filename, id_filename, lookup_filename, magnets_filename, magl
         ref_phase_error, ref_trajectories = calculate_bfield_phase_error(info, ref_bfield)
         fp.create_dataset('id_phase_error_perfect', data=ref_phase_error)
         fp.create_dataset('id_trajectory_perfect',  data=ref_trajectories)
+
+        # Output the LOBF normalized trajectories for the first derivative of motion
+        traj_norm, ref_traj_norm = calculate_normalized_trajectory(trajectories, ref_trajectories)
+
+        fp.create_dataset('id_trajectory_norm', data=traj_norm)
+        fp.create_dataset('id_trajectory_norm_perfect', data=ref_traj_norm)
+
