@@ -28,7 +28,7 @@ docker rm optid --force
 # i.e. If you run this command from a directory /dls/tmp/blah then that directory will be mounted into the container as /dls/tmp/blah.
 
 docker run -itd --rm --name optid -v $(pwd):$(pwd) -w $(pwd) quay.io/rosalindfranklininstitute/opt-id:v2 \
-    python -m IDSort.src.optid --sort --cluster-off config.yaml
+    python -m IDSort.src.optid --sort config.yaml
 ```
 
 ---
@@ -100,7 +100,7 @@ Now lets run the sort operation using the config.yaml and the .sim files!
 
 ```
 docker run -itd --rm --name optid -v $(pwd):$(pwd) -w $(pwd) quay.io/rosalindfranklininstitute/opt-id:v2 \
-    python -m IDSort.src.optid --sort --cluster-off CPMU_I04/config.yaml
+    python -m IDSort.src.optid --sort CPMU_I04/config.yaml
 ```
 
 Because the CPMU_I04.json, CPMU_I04.mag, and CPMU_I04.h5 don't exist yet Opt-ID will generate them and write them to the paths specified in the config.yaml.
