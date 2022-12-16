@@ -13,6 +13,8 @@ Code for the Optimisation of Synchrotron Insertion Devices using Python and Arti
 
 ---
 
+## Usage
+
 ### Example Hybrid CPMU device
 
 ```python
@@ -61,6 +63,80 @@ nslot 46
 nslot_by_type Counter({'PP': 18, 'HH': 16, 'HT': 4, 'PT': 4, 'HE': 4})
 bfield (1, 100, 100, 3)
 ```
+
+### Pre-tinned IDs
+
+Opt-ID v3 offers a flexible and extendable framework for building IDs. Using the API we provide two example ID types as pre-tinned classes of `optid.device.HybridDevice` for Hybrid CPMU and `optid.device.APPLEDevice` for APPLE II type devices.
+
+By studying the code for these classes a design pattern can be extracted to define any custom ID design.
+
+---
+
+
+## Install
+
+`setup.py` assumes a compatible version of JAX, JAXLib, and Radia are already installed. Automated build is tested for a `cuda:11.5.1-cudnn8-devel-ubuntu20.04` environment with `jax-v0.3.1` and the latest version of Radia.
+
+### Install & Run through Docker/Podman environment
+
+Docker image for the Opt-ID dependencies are provided in the `quay.io/rosalindfranklininstitute/optid:<tag>` Quay.io image.
+
+Use the `--gpu=all` flag to enable CUDA GPUs.
+
+```
+# Run the container for the Opt-ID environment using the code for Opt-ID installed in the image
+docker run --rm quay.io/rosalindfranklininstitute/optid:<tag> \
+    python -m pytest --cov=/usr/local/optid/src/optid /usr/local/optid/tests
+```
+
+```
+# Run the container for the Opt-ID environment using the code for Opt-ID you have locally injected into the image
+git clone https://github.com/rosalindfranklininstitute/optid.git
+cd optid
+docker run --rm -v $(pwd):/usr/local/optid -w /usr/local/optid \
+    quay.io/rosalindfranklininstitute/optid:<tag> \
+    python -m pytest --cov=/usr/local/optid/src/optid /usr/local/optid/tests
+```
+
+```
+# Run the container for the Opt-ID environment and host a jupyter lab server for using the example notebooks
+git clone https://github.com/rosalindfranklininstitute/optid.git
+cd optid
+docker run --rm -v $(pwd):/usr/local/optid -w /usr/local/optid \
+    quay.io/rosalindfranklininstitute/optid:<tag> \
+    jupyter lab --port 8889 --no-browser --notebook-dir=/usr/local/optid
+```
+
+### Install & Run through Singularity environment
+
+Singularity image for the Opt-ID dependencies are provided in the `rosalindfranklininstitute/optid/optid:<tag>` cloud.sylabs.io image.
+
+Use the `--nv` flag to enable CUDA GPUs.
+
+```
+# Run the container for the Opt-ID environment using the code for Opt-ID installed in the image
+singularity run --nv docker://quay.io/rosalindfranklininstitute/optid:<tag> \
+    python -m pytest --cov=/usr/local/optid/src/optid /usr/local/optid/tests
+```
+
+```
+# Run the container for the Opt-ID environment using the code for Opt-ID you have locally injected into the image
+git clone https://github.com/rosalindfranklininstitute/optid.git
+cd optid
+singularity run --nv -B $(pwd):/usr/local/optid -W /usr/local/optid \
+    docker://quay.io/rosalindfranklininstitute/optid:<tag> \
+    python -m pytest --cov=/usr/local/optid/src/optid /usr/local/optid/tests
+```
+
+```
+# Run the container for the Opt-ID environment and host a jupyter lab server for using the example notebooks
+git clone https://github.com/rosalindfranklininstitute/optid.git
+cd optid
+singularity run --nv -B $(pwd):/usr/local/optid -W /usr/local/optid \
+    docker://quay.io/rosalindfranklininstitute/optid:<tag> \
+    jupyter lab --port 8889 --no-browser --notebook-dir=/usr/local/optid
+```
+
 
 ---
 
