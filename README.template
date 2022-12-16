@@ -13,76 +13,53 @@ Code for the Optimisation of Synchrotron Insertion Devices using Python and Arti
 
 ---
 
-## Install
+### Example Hybrid CPMU device
 
-`setup.py` assumes a compatible version of JAX, JAXLib, and Radia are already installed. Automated build is tested for a `cuda:11.5.1-cudnn8-devel-ubuntu20.04` environment with `jax-v0.3.1` and the latest version of Radia.
+```python
+import logging
+import optid
+optid.utils.logging.attach_console_logger(log_level=logging.INFO)
 
-## Install & Run through Docker environment
+from optid.constants import VECTOR_ZERO, VECTOR_S, MATRIX_ROTS_180
+from optid.geometry import ChamferedCuboid, Cuboid
+from optid.device   import HybridDevice, ElementSet
 
-Docker image for the Opt-ID dependencies are provided in the `quay.io/rosalindfranklininstitute/optid:<tag>` Quay.io image. Images are available for each branch of this repository (main, development, ect).
+tetgen_kargs = dict(subdiv=0, nobisect=True)
 
-```
-# Run the container for the Opt-ID environment using the code for Opt-ID installed in the image
-docker run --rm quay.io/rosalindfranklininstitute/optid:<tag> \
-    python -m pytest --cov=/usr/local/optid/src/optid /usr/local/optid/tests
-```
+mat_magnet = optid.material.NamedMaterial('Sm2Co17')
+mat_pole   = optid.material.NamedMaterial('Ferrite')
 
-```
-# Run the container for the Opt-ID environment using the code for Opt-ID you have locally injected into the image
-git clone https://github.com/rosalindfranklininstitute/optid.git
-cd optid
-docker run --rm -v $(pwd):/usr/local/optid -w /usr/local/optid \
-    quay.io/rosalindfranklininstitute/optid:<tag> \
-    python -m pytest --cov=/usr/local/optid/src/optid /usr/local/optid/tests
-```
+hh = ElementSet(name='HH', candidates='sim/HH.csv',  vector=VECTOR_S, flip_matrices=[MATRIX_ROTS_180],
+                geometry=ChamferedCuboid(shape=(50.0, 30.0, 5.77), material=mat_magnet, chamfer=5, **tetgen_kargs))
 
-```
-# Run the container for the Opt-ID environment and host a jupyter lab server for using the example notebooks
-git clone https://github.com/rosalindfranklininstitute/optid.git
-cd optid
-docker run --rm -v $(pwd):/usr/local/optid -w /usr/local/optid \
-    quay.io/rosalindfranklininstitute/optid:<tag> \
-    jupyter lab --port 8889 --no-browser --notebook-dir=/usr/local/optid
-```
+he = ElementSet(name='HE', candidates='sim/HEC.csv', vector=VECTOR_S, flip_matrices=[MATRIX_ROTS_180],
+                geometry=ChamferedCuboid(shape=(50.0, 30.0, 3.48), material=mat_magnet, chamfer=5, **tetgen_kargs))
 
-## Install & Run through Singularity environment
+ht = ElementSet(name='HT', candidates='sim/HTE.csv', vector=VECTOR_S, flip_matrices=[MATRIX_ROTS_180],
+                geometry=ChamferedCuboid(shape=(50.0, 30.0, 1.14), material=mat_magnet, chamfer=5, **tetgen_kargs))
 
-Singularity image for the Opt-ID dependencies are provided in the `rosalindfranklininstitute/optid/optid:<tag>` cloud.sylabs.io image.
+pp = ElementSet(name='PP', vector=VECTOR_ZERO, geometry=Cuboid(shape=(20.0, 20.0, 2.95), material=mat_pole, **tetgen_kargs))
+pt = ElementSet(name='PT', vector=VECTOR_ZERO, geometry=Cuboid(shape=(20.0, 20.0, 5.00), material=mat_pole, **tetgen_kargs))
 
-Use the `--nv` flag to enable CUDA GPUs.
+device = HybridDevice(name='I14-CPMU', nperiod=4, symmetric=True, hh=hh, he=he, ht=ht, pp=pp, pt=pt)
 
-```
-# Pull an singularity image down from cloud.sylabs.io
-singularity pull library://rosalindfranklininstitute/optid/optid:<tag>
+print('nperiod', device.nperiod)
+print('period_length', device.period_length)
+print('nslot', device.nslot)
+print('nslot_by_type', device.nslot_by_type)
+
+pose = optid.device.Pose(gap=1, phase=0)
+bfield = device.bfield(lattice=optid.lattice.Lattice(optid.core.affine.scale(1, 10, device.length * 1.1), shape=(1, 100, 100)), pose=pose)
+
+print('bfield', bfield.field.shape)
 ```
 
 ```
-# or... Build a singularity image from a docker image on Quay.io
-singularity build optid_<tag>.sif docker://quay.io/rosalindfranklininstitute/optid:<tag>
-```
-
-```
-# Run the container for the Opt-ID environment using the code for Opt-ID installed in the image
-singularity run --nv optid_<tag>.sif \
-    python -m pytest --cov=/usr/local/optid/src/optid /usr/local/optid/tests
-```
-
-```
-# Run the container for the Opt-ID environment using the code for Opt-ID you have locally injected into the image
-git clone https://github.com/rosalindfranklininstitute/optid.git
-cd optid
-singularity run --nv -B $(pwd):/usr/local/optid -W /usr/local/optid \
-    optid_<tag>.sif \
-    python -m pytest --cov=/usr/local/optid/src/optid /usr/local/optid/tests
-```
-
-```
-# Run the container for the Opt-ID environment and host a jupyter lab server for using the example notebooks
-git clone https://github.com/rosalindfranklininstitute/optid.git
-cd optid
-singularity run --nv -B $(pwd):/usr/local/optid -W /usr/local/optid \
-    optid_<tag>.sif \
-    jupyter lab --port 8889 --no-browser --notebook-dir=/usr/local/optid
+nperiod 4
+period_length 17.69000005722046
+nslot 46
+nslot_by_type Counter({'PP': 18, 'HH': 16, 'HT': 4, 'PT': 4, 'HE': 4})
+bfield (1, 100, 100, 3)
 ```
 
 ---
