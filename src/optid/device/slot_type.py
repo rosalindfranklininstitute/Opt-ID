@@ -16,7 +16,7 @@
 # External Imports
 import numbers
 from beartype import beartype
-import typing as typ
+import beartype.typing as typ
 import numpy as np
 
 # Opt-ID Imports

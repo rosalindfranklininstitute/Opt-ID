@@ -16,7 +16,7 @@
 # External Imports
 from beartype import beartype
 import jax.numpy as jnp
-import typing as typ
+import beartype.typing as typ
 
 # Opt-ID Imports
 from optid.lattice import Lattice

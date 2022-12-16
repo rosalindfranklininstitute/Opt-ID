@@ -19,15 +19,17 @@ from types import MappingProxyType
 from beartype import beartype
 from more_itertools import SequenceView
 import numbers
-import typing as typ
+import beartype.typing as typ
 import numpy as np
 import re
+import radia as rad
 
 # Opt-ID Imports
 from ..utils.cached import Memoized, cached_property, invalidates_cached_properties
 from ..constants import MATRIX_IDENTITY
 from ..core.utils import np_readonly
 from ..core.affine import translate, is_scale_preserving
+from ..core.bfield import RadiaCleanEnv, jnp_radia_evaluate_bfield_on_lattice
 from ..bfield import Bfield
 from ..lattice import Lattice
 from .pose import Pose
@@ -202,14 +204,32 @@ class Girder(Memoized):
         self._spacing += spacing
 
     @beartype
-    def bfield(self,
+    def full_bfield(self,
             lattice: Lattice,
             pose: Pose) -> Bfield:
+
+        radia_objects = list()
+        with RadiaCleanEnv():
+
+            for slot in self.slots:
+                if slot.slot_type.element_set.is_magnetized:
+                    radia_objects.append(slot.to_radia(vector=slot.slot_type.element_set.vector, pose=pose, world_vector=False))
+
+            radia_object = rad.ObjCnt(radia_objects)
+            girder_field = jnp_radia_evaluate_bfield_on_lattice(radia_object, lattice.world_lattice)
+
+        return Bfield(lattice=lattice, field=girder_field)
+
+    @beartype
+    def bfield(self,
+            lattice: Lattice,
+            pose: Pose,
+            add_noise=False) -> Bfield:
 
         girder_field = None
         for slot in self.slots:
             if slot.slot_type.element_set.is_magnetized:
-                slot_field = slot.bfield(lattice=lattice, pose=pose).field
+                slot_field = slot.bfield(lattice=lattice, pose=pose, add_noise=add_noise).field
                 girder_field = slot_field if (girder_field is None) else (girder_field + slot_field)
 
         return Bfield(lattice=lattice, field=girder_field)

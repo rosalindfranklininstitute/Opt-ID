@@ -6,6 +6,7 @@ h5py
 pandas
 pandera
 matplotlib
+seaborn
 sect==0.4.1
 vtk
 pyvista

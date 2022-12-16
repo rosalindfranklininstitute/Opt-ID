@@ -16,8 +16,9 @@
 # External Imports
 import numbers
 from beartype import beartype
-import typing as typ
+import beartype.typing as typ
 import numpy as np
+import radia as rad
 
 
 # Opt-ID Imports
@@ -30,6 +31,7 @@ from ..bfield import Bfield
 from .element_state import ElementState
 from .pose import Pose
 from .slot_type import SlotType
+from ..geometry import Geometry
 
 
 class Slot:
@@ -138,12 +140,12 @@ class Slot:
                self.girder.world_matrix(pose=pose)
 
     @beartype
-    def to_radia(self,
+    def to_world_geometry(self,
             vector: typ.Union[np.ndarray, typ.Sequence[numbers.Real]],
             pose: Pose,
             shim: typ.Union[np.ndarray, typ.Sequence[numbers.Real]] = VECTOR_ZERO,
             flip: int = 0,
-            world_vector: bool = True) -> int:
+            world_vector: bool = True) -> typ.Tuple[Geometry, typ.Any]:
 
         if not isinstance(vector, np.ndarray):
             vector = np.array(vector, dtype=np.float32)
@@ -162,6 +164,19 @@ class Slot:
         if not world_vector:
             vector = transform_rescaled_vectors(vector, matrix)
 
+        return geometry, vector
+
+    @beartype
+    def to_radia(self,
+            vector: typ.Union[np.ndarray, typ.Sequence[numbers.Real]],
+            pose: Pose,
+            shim: typ.Union[np.ndarray, typ.Sequence[numbers.Real]] = VECTOR_ZERO,
+            flip: int = 0,
+            world_vector: bool = True) -> int:
+
+        geometry, vector = self.to_world_geometry(vector=vector, pose=pose, shim=shim,
+                                                  flip=flip, world_vector=world_vector)
+
         return geometry.to_radia(vector)
 
     @beartype
@@ -178,6 +193,10 @@ class Slot:
             radia_object = self.to_radia(vector=vector, pose=pose, shim=shim,
                                          flip=flip, world_vector=world_vector)
 
+            # res = rad.Solve(radia_object, 0.0001, 1500)
+            #
+            # print('Relaxation Results:', res)
+
             bfield = jnp_radia_evaluate_bfield_on_lattice(radia_object, lattice.world_lattice)
 
         return Bfield(lattice=lattice, field=bfield)
@@ -187,10 +206,16 @@ class Slot:
             lattice: Lattice,
             pose: Pose,
             shim: typ.Union[np.ndarray, typ.Sequence[numbers.Real]] = VECTOR_ZERO,
-            flip: int = 0) -> Bfield:
+            flip: int = 0,
+            add_noise=False) -> Bfield:
+
+        vector = self.slot_type.element_set.vector
+
+        if add_noise:
+            vector = vector + np.random.normal(scale=0.001, size=vector.shape).astype(np.float32)
 
         return self.bfield_from_vector(lattice=lattice, pose=pose, shim=shim, flip=flip,
-                                       vector=self.slot_type.element_set.vector, world_vector=False)
+                                       vector=vector, world_vector=False)
 
     @beartype
     def bfield_from_state(self,

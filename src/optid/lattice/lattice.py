@@ -16,7 +16,7 @@
 # External Imports
 from beartype import beartype
 import numbers
-import typing as typ
+import beartype.typing as typ
 import numpy as np
 import jax.numpy as jnp
 

@@ -15,7 +15,7 @@
 
 # External Imports
 from beartype import beartype
-import typing as typ
+import beartype.typing as typ
 from functools import cached_property
 
 

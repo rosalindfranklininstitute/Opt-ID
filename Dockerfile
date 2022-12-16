@@ -14,28 +14,37 @@
 
 FROM quay.io/rosalindfranklininstitute/jax:v0.3.1
 
+RUN rm /etc/apt/sources.list.d/cuda.list
+
 # Install dependencies
-RUN apt-get update -y && apt-get install -y ffmpeg libsm6 libxext6 && \
+RUN apt-get update -y && apt-get install -y wget curl python3-dev ffmpeg libsm6 libxext6 build-essential && \
     apt-get autoremove -y --purge && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 
-# Build specific OpenMPI with extensions
-RUN mkdir -p /tmp/openmpi && \
-    wget https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-4.0.0.tar.gz -P /tmp/openmpi && \
-    tar xf /tmp/openmpi/openmpi-4.0.0.tar.gz -C /tmp/openmpi
-WORKDIR /tmp/openmpi/openmpi-4.0.0/build
-RUN ../configure --prefix=/usr/local \
-                 --enable-mpi1-compatibility \
-                 --disable-mpi-fortran && \
-    make && \
-    make install && \
-    rm -rf /tmp/openmpi && \
-    ldconfig
-WORKDIR /
+## Build specific OpenMPI with extensions
+#RUN mkdir -p /tmp/openmpi && \
+#    wget https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-4.0.0.tar.gz -P /tmp/openmpi && \
+#    tar xf /tmp/openmpi/openmpi-4.0.0.tar.gz -C /tmp/openmpi
+#WORKDIR /tmp/openmpi/openmpi-4.0.0/build
+#RUN ../configure --prefix=/usr/local \
+#                 --enable-mpi1-compatibility \
+#                 --disable-mpi-fortran && \
+#    make && \
+#    make install && \
+#    rm -rf /tmp/openmpi && \
+#    ldconfig
+#WORKDIR /
 
-# Install python packages
-RUN env MPICC=/usr/local/bin/mpicc pip install --no-cache-dir --upgrade mpi4py && \
-    rm -rf /tmp/* && \
-    find /usr/lib/python3.*/ -name 'tests' -exec rm -rf '{}' +
+#RUN apt-get update -y && \
+#    apt-get upgrade -y python3-pip && \
+#    apt-get clean -y && rm -rf /var/lib/apt/lists/*
+#
+## Install python packages
+#RUN export MPICC=/usr/local/bin/mpicc && \
+#    export CUDA_ROOT=/usr/local/cuda && \
+#    pip install --no-cache-dir --upgrade mpi4py && \
+#    pip install --no-cache-dir --upgrade mpi4jax && \
+#    rm -rf /tmp/* && \
+#    find /usr/lib/python3.*/ -name 'tests' -exec rm -rf '{}' +
 
 # Build radia (only need radia.so on the the PYTHONPATH)
 RUN mkdir -p /tmp/radia && \

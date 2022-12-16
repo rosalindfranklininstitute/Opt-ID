@@ -16,7 +16,7 @@
 # External Imports
 from beartype import beartype
 import numbers
-import typing as typ
+import beartype.typing as typ
 import numpy as np
 import pandas as pd
 import pandera as pa
@@ -77,7 +77,7 @@ class ElementCandidate:
         """
 
         schema = pa.DataFrameSchema({
-            'name': pa.Column(pa.String, coerce=True, allow_duplicates=False),
+            'name': pa.Column(pa.String, coerce=True, unique=True),
             'x':    pa.Column(pa.Float,  coerce=True),
             'z':    pa.Column(pa.Float,  coerce=True),
             's':    pa.Column(pa.Float,  coerce=True)

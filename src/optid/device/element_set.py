@@ -17,7 +17,7 @@
 import numbers
 from beartype import beartype
 from types import MappingProxyType
-import typing as typ
+import beartype.typing as typ
 import numpy as np
 import pandas as pd
 

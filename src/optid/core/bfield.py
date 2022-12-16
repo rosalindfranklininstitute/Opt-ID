@@ -15,7 +15,7 @@
 
 # External Imports
 from contextlib import contextmanager
-import typing as typ
+import beartype.typing as typ
 from beartype import beartype
 import jax
 import jax.numpy as jnp

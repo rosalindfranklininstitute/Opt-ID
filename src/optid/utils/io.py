@@ -14,7 +14,7 @@
 
 
 # External Imports
-import typing as typ
+import beartype.typing as typ
 from beartype import beartype
 import pickle
 import numpy as np

@@ -16,7 +16,7 @@
 # External Imports
 from beartype import beartype
 import numbers
-import typing as typ
+import beartype.typing as typ
 import numpy as np
 from sect.triangulation import constrained_delaunay_triangles
 

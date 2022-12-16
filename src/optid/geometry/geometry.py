@@ -16,7 +16,7 @@
 # External Imports
 from beartype import beartype
 import numbers
-import typing as typ
+import beartype.typing as typ
 import numpy as np
 import jax.numpy as jnp
 import radia as rad
@@ -183,11 +183,12 @@ class Geometry:
             # Create a radia object for this polyhedra
             obj += [rad.ObjPolyhdr(local_vertices, faces, vector.tolist())]
 
-        obj = rad.ObjCnt(obj) if len(obj) > 1 else obj[0]
-
         mat = self.material.to_radia(vector)
         if mat is not None:
-            obj = rad.MatApl(obj, mat)
+            for o in obj:
+                rad.MatApl(o, mat)
+
+        obj = rad.ObjCnt(obj) if len(obj) > 1 else obj[0]
 
         return obj
 

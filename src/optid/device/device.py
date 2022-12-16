@@ -19,13 +19,15 @@ from more_itertools import SequenceView
 from collections import Counter, defaultdict
 from beartype import beartype
 import numbers
-import typing as typ
+import beartype.typing as typ
 import numpy as np
 import re
+import radia as rad
 
 # Opt-ID Imports
 from ..utils.cached import Memoized, cached_property, invalidates_cached_properties
 from ..core.affine import is_scale_preserving
+from ..core.bfield import RadiaCleanEnv, jnp_radia_evaluate_bfield_on_lattice
 from ..core.utils import np_readonly
 from ..bfield import Bfield
 from ..lattice import Lattice
@@ -132,19 +134,47 @@ class Device(Memoized):
 
         for element_type in self.nslot_by_type.keys():
 
-            if self.nslot_by_type[element_type] > self.element_sets[element_type].ncandidate:
+
+
+            if self.element_sets[element_type].is_magnetized and \
+                    (self.nslot_by_type[element_type] > self.element_sets[element_type].ncandidate):
                 raise ValueError(f'device has more slots of type "{element_type} than candidates : '
                                  f'slots={self.nslot_by_type[element_type]} > '
                                  f'candidates={self.element_sets[element_type].ncandidate}')
 
     @beartype
-    def bfield(self,
+    def full_bfield(self,
             lattice: Lattice,
             pose: Pose) -> Bfield:
 
+        radia_objects = list()
+        with RadiaCleanEnv():
+
+            for girder in self.girders.values():
+                for slot in girder.slots:
+                    if slot.slot_type.element_set.is_magnetized:
+                        radia_objects.append(slot.to_radia(vector=slot.slot_type.element_set.vector, pose=pose, world_vector=False))
+
+            radia_object = rad.ObjCnt(radia_objects)
+
+            IM = rad.RlxPre(radia_object)
+            res = rad.RlxAuto(IM, 0.001, 5000)
+
+            print('Relaxation Results:', res)
+
+            girder_field = jnp_radia_evaluate_bfield_on_lattice(radia_object, lattice.world_lattice)
+
+        return Bfield(lattice=lattice, field=girder_field)
+
+    @beartype
+    def bfield(self,
+            lattice: Lattice,
+            pose: Pose,
+            add_noise=False) -> Bfield:
+
         device_field = None
         for girder in self.girders.values():
-            girder_field = girder.bfield(lattice=lattice, pose=pose).field
+            girder_field = girder.bfield(lattice=lattice, pose=pose, add_noise=add_noise).field
             device_field = girder_field if (device_field is None) else (device_field + girder_field)
 
         return Bfield(lattice=lattice, field=device_field)
